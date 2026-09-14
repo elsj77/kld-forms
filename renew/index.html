@@ -32,6 +32,7 @@
   .btn[disabled]{background-color:#a7d7b9;cursor:wait;}
   .btn-inline{display:inline-block;background-color:#16a34a;color:#fff;padding:11px 22px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;}
   .btn-inline:hover{background-color:#15803d;}
+  .link-quiet{display:inline-block;margin-top:10px;font-size:13px;color:#2563eb;text-decoration:underline;cursor:pointer;background:none;border:none;font-family:inherit;padding:0;}
   .err{color:#b91c1c;font-weight:600;font-size:14px;margin-top:12px;display:none;}
   .quote{display:inline-block;background:#eef4fb;color:#33506e;font-size:12px;font-weight:600;border-radius:6px;padding:3px 9px;margin-left:8px;vertical-align:2px;}
   .total{display:inline-block;background:#0f2338;color:#fff;font-size:13px;font-weight:700;border-radius:6px;padding:3px 10px;margin-left:8px;vertical-align:2px;}
@@ -51,10 +52,29 @@
   .cardbox p{margin:0 0 10px;font-size:13.5px;color:#3d5a47;}
   .cardline{margin-top:10px;font-size:13.5px;color:#3d5a47;background:#f0faf3;border:1px solid #bcd9c6;border-radius:10px;padding:12px 14px;font-weight:600;}
   .cardline .dots{letter-spacing:2px;}
-  .reassure-line{margin-top:14px;font-size:13.5px;color:#3d5a47;background:#f0faf3;border:1px solid #bcd9c6;border-radius:10px;padding:12px 14px;font-weight:600;}
+  .cardline .chg{font-weight:400;font-size:12.5px;}
+  .reassure-line{margin-top:10px;font-size:13.5px;color:#3d5a47;background:#f0faf3;border:1px solid #bcd9c6;border-radius:10px;padding:12px 14px;font-weight:600;}
+  .sched{margin-top:10px;border:1px solid #dfe6ec;border-radius:10px;overflow:hidden;background:#fff;}
+  .sched .s-t{background:#f7f9fb;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#6b7684;padding:9px 14px;border-bottom:1px solid #dfe6ec;}
+  .sched .s-r{display:flex;justify-content:space-between;padding:9px 14px;font-size:13.5px;color:#1b2933;border-bottom:1px solid #eef1f5;}
+  .sched .s-r:last-child{border-bottom:none;}
+  .sched .s-r .amt{font-weight:700;}
+  .sched .s-r.last .amt{color:#15803d;}
+  .sched .s-note{padding:8px 14px;font-size:11.5px;color:#8a94a0;background:#f7f9fb;}
   .prepaybox{margin-top:14px;border:1px solid #d7dee7;border-radius:10px;padding:15px 16px;background:#fbfcfd;display:none;}
   .prepaybox.show{display:block;}
   .prepaybox p{font-size:13.5px;color:#475569;margin:0 0 10px;}
+  .paycard{margin-top:12px;border:1px solid #bcd9c6;background:#f0faf3;border-radius:10px;padding:14px 16px;}
+  .paycard p{font-size:13.5px;color:#3d5a47;margin:0 0 8px;}
+  .confirmbox{margin-top:12px;border:2px solid #16a34a;background:#fff;border-radius:10px;padding:16px;display:none;}
+  .confirmbox .c-t{font-size:15.5px;font-weight:800;color:#0f2338;margin:0 0 6px;}
+  .confirmbox p{font-size:13.5px;color:#3d5a47;margin:0 0 12px;}
+  .confirmbox .c-btns{display:flex;gap:10px;flex-wrap:wrap;}
+  .btn-danger{background-color:#16a34a;color:#fff;padding:13px 24px;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;}
+  .btn-danger:hover{background-color:#15803d;}
+  .btn-danger[disabled]{background-color:#a7d7b9;cursor:wait;}
+  .btn-ghost{background-color:#fff;color:#475569;border:1px solid #c6cad2;padding:13px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}
+  .declinemsg{margin-top:10px;border:1px solid #f3c8c8;background:#fdf3f3;border-radius:10px;padding:12px 14px;font-size:13.5px;color:#b91c1c;display:none;font-weight:600;}
 </style>
 </head><body><div class="wrap">
 <div class="card" id="main">
@@ -73,13 +93,17 @@
     <div class="acct" id="who" style="display:none;"></div>
 
     <h2 style="margin-top:0;">How would you like to pay for your season?</h2>
-    <label class="radio-card"><input type="radio" name="payplan" value="installments" checked> Monthly installments &mdash; billed to my card on file<span class="rec-tag">Recommended</span><br><span class="opt">Your renewal is confirmed right away. Your card is billed automatically on the 1st of each month &mdash; no invoices to chase, nothing to remember.</span></label>
+    <label class="radio-card"><input type="radio" name="payplan" value="installments" checked> Monthly installments &mdash; billed to my card on file<span class="rec-tag">Recommended</span><br><span class="opt" id="instopt">Your renewal is confirmed right away. Your card is billed automatically on the 1st of each month &mdash; no invoices to chase, nothing to remember.</span></label>
     <label class="radio-card"><input type="radio" name="payplan" value="prepay"> Prepay the full season <span class="opt">(one single payment)</span></label>
     <div id="cardprompt"></div>
     <div class="prepaybox" id="prepaybox">
-      <p>Pay your full season in one secure payment:</p>
-      <a class="btn-inline" id="prepaylink" href="#" target="_blank" rel="noopener">Prepay the Season &rarr;</a>
-      <p style="margin-top:8px;margin-bottom:0;">Secure payment through Authorize.net &middot; your card details never touch our systems.</p>
+      <div id="prepayhosted">
+        <p>Pay your full season in one secure payment:</p>
+        <a class="btn-inline" id="prepaylink" href="#" target="_blank" rel="noopener">Prepay the Season &rarr;</a>
+        <p style="margin-top:8px;margin-bottom:0;">Secure payment through Authorize.net &middot; your card details never touch our systems.</p>
+      </div>
+      <div id="prepayonfile" style="display:none;"></div>
+      <div class="declinemsg" id="declinemsg"></div>
     </div>
 
     <label>Anything we should know? <span class="opt">(optional)</span></label>
@@ -95,6 +119,7 @@
 <script>
 (function(){
   var API = 'https://doc-pro-781789de.base44.app/functions/snowChangeRequest';
+  var API_PAY = 'https://doc-pro-781789de.base44.app/functions/snowRenewCharge';
   var qs = new URLSearchParams(location.search);
   var e = (qs.get('e')||'').trim();
   var content = document.getElementById('content');
@@ -115,28 +140,70 @@
   }
   document.getElementById('changelink').href = '../change/?e=' + encodeURIComponent(e);
 
-  fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({e:e, mode:'lookup'})})
-    .then(function(r){ return r.json(); })
-    .then(function(j){
-      if(j.error){ fail(j.error==='not_found' ? 'We couldn\'t find your renewal quote. Please use the exact link from your renewal email, or call our office.' : 'We couldn\'t load your details right now. Please try again in a few minutes, or call our office at 250-489-2031.'); return; }
-      window.acct = j;
-      var who = document.getElementById('who');
-      who.innerHTML = '<p class="lbl">Confirming your renewal for</p>'
-        + '<div class="row">'
-        + '<div class="f"><p class="k">Name</p><p class="v">' + esc([j.first,j.last].filter(Boolean).join(' ')) + '</p></div>'
-        + '<div class="f"><p class="k">Phone</p><p class="v">' + esc(j.phone || '—') + '</p></div>'
-        + '<div class="f"><p class="k">Email</p><p class="v">' + esc(j.email || '—') + '</p></div>'
-        + '<div class="f"><p class="k">Service address</p><p class="v">' + esc([j.street,j.city,j.postal].filter(Boolean).join(', ')) + '</p></div>'
-        + '</div>'
-        + '<div class="chips"><span class="quote">Snow renewal #' + esc(e) + '</span>' + (j.total ? '<span class="total">Season total ' + money(j.total) + '</span>' : '') + '</div>'
-        + '<p class="note">These come straight from your account. If anything has changed, just tell us in your note below and we&rsquo;ll update it when we confirm.</p>';
-      who.style.display='block';
-      document.getElementById('prepaylink').href = 'https://card.kootenaylawndoctor.com/pay/?e=' + encodeURIComponent(e);
-      content.style.display='none';
-      formwrap.style.display='block';
-      updateCardPrompt();
-    })
-    .catch(function(){ fail('Connection problem &mdash; please try again in a few minutes, or call our office.'); });
+  function loadJson(url, body){
+    return fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)})
+      .then(function(r){ return r.json(); });
+  }
+
+  // payment schedule: N monthly charges on the 1st, starting Nov 1 2026
+  function schedRows(n, monthly, total){
+    var names=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var rows=[]; var y=2026; var m=10; // November 2026
+    var last = Math.round((total - monthly*(n-1))*100)/100;
+    var lastC = Math.round(last*100), monthlyC = Math.round(monthly*100);
+    var adj = lastC !== monthlyC; // integer-cent compare — float drift safe
+    for(var i=0;i<n;i++){
+      var isLast = (i===n-1);
+      var amt = (isLast && adj) ? last : monthly;
+      rows.push({label: names[m]+' 1, '+y, amt: amt, isLast: isLast && adj});
+      m++; if(m>11){m=0;y++;}
+    }
+    return rows;
+  }
+  function schedHtml(n, monthly, total){
+    var rows = schedRows(n, monthly, total);
+    var out = '<div class="sched"><div class="s-t">Your payment schedule</div>';
+    rows.forEach(function(r){
+      out += '<div class="s-r' + (r.isLast ? ' last' : '') + '"><span>' + esc(r.label) + '</span><span class="amt">' + money(r.amt) + (r.isLast ? ' (final payment)' : '') + '</span></div>';
+    });
+    if(n === 1) out += '<div class="s-note">Single payment plan.</div>';
+    else out += '<div class="s-note">Charged automatically to your card on file on the 1st of each month.</div>';
+    out += '</div>';
+    return out;
+  }
+
+  loadJson(API, {e:e, mode:'lookup'}).then(function(j){
+    if(j.error){ fail(j.error==='not_found' ? 'We couldn\'t find your renewal quote. Please use the exact link from your renewal email, or call our office.' : 'We couldn\'t load your details right now. Please try again in a few minutes, or call our office at 250-489-2031.'); return; }
+    window.acct = j;
+    // second lookup: payment details (total, installments, monthly, card-on-file, chargeable)
+    return loadJson(API_PAY, {e:e, mode:'lookup'}).then(function(p){
+      if(!p.error){ window.acct.total = p.total; window.acct.installments = p.installments; window.acct.monthly = p.monthly;
+        window.acct.chargeable = !!p.chargeable;
+        if(p.cardLast4){ window.acct.cardLast4 = p.cardLast4; window.acct.cardExp = p.cardExp; window.acct.hasCard = true; }
+        if(p.cardBrand) window.acct.cardBrand = p.cardBrand;
+      }
+    }).catch(function(){ /* payment lookup optional — page still works without it */ });
+  }).then(function(){
+    var a = window.acct || {};
+    if(a.installments && a.installments > 1 && a.monthly){
+      document.getElementById('instopt').innerHTML = a.installments + ' equal monthly installments of <b>' + money(a.monthly) + '</b> &mdash; billed to your card on file automatically on the 1st of each month. No invoices to chase, nothing to remember.';
+    }
+    var who = document.getElementById('who');
+    who.innerHTML = '<p class="lbl">Confirming your renewal for</p>'
+      + '<div class="row">'
+      + '<div class="f"><p class="k">Name</p><p class="v">' + esc([a.first,a.last].filter(Boolean).join(' ')) + '</p></div>'
+      + '<div class="f"><p class="k">Phone</p><p class="v">' + esc(a.phone || '—') + '</p></div>'
+      + '<div class="f"><p class="k">Email</p><p class="v">' + esc(a.email || '—') + '</p></div>'
+      + '<div class="f"><p class="k">Service address</p><p class="v">' + esc([a.street,a.city,a.postal].filter(Boolean).join(', ')) + '</p></div>'
+      + '</div>'
+      + '<div class="chips"><span class="quote">Snow renewal #' + esc(e) + '</span>' + (a.total ? '<span class="total">Season total ' + money(a.total) + '</span>' : '') + '</div>'
+      + '<p class="note">These come straight from your account. If anything has changed, just tell us in your note below and we&rsquo;ll update it when we confirm.</p>';
+    who.style.display='block';
+    document.getElementById('prepaylink').href = 'https://card.kootenaylawndoctor.com/pay/?e=' + encodeURIComponent(e);
+    content.style.display='none';
+    formwrap.style.display='block';
+    updateCardPrompt();
+  }).catch(function(){ fail('Connection problem &mdash; please try again in a few minutes, or call our office.'); });
 
   document.querySelectorAll('input[name=payplan]').forEach(function(r){
     r.addEventListener('change', function(){
@@ -147,6 +214,16 @@
   });
   document.querySelector('input[name=payplan][value=installments]').closest('label.radio-card').classList.add('checked');
 
+  function cardOnFileHtml(a, withChangeLink){
+    var brand = a.cardBrand ? esc(a.cardBrand) + ' ' : '';
+    var h = '<div class="cardline">Card on file: ' + brand + '<span class="dots">&bull;&bull;&bull;&bull;</span> ' + esc(a.cardLast4 || '') + (a.cardExp ? ' &middot; expires ' + esc(a.cardExp) : '');
+    if(withChangeLink){
+      h += ' &nbsp;<span class="chg">&middot; <a href="https://card.kootenaylawndoctor.com/?e=' + encodeURIComponent(a.email || '') + '" target="_blank" rel="noopener" style="color:#2563eb;">Use a different card &rarr;</a></span>';
+    }
+    h += '</div>';
+    return h;
+  }
+
   function updateCardPrompt(){
     var box = document.getElementById('cardprompt');
     var pre = document.getElementById('prepaybox');
@@ -154,20 +231,90 @@
     var a = window.acct || {};
     pre.classList.toggle('show', sel === 'prepay');
     if(sel === 'installments' && a.residential){
+      var sched = (a.installments && a.monthly && a.total) ? schedHtml(a.installments, a.monthly, a.total) : '';
       if(a.hasCard){
-        var brand = a.cardBrand ? esc(a.cardBrand) + ' ' : '';
-        box.innerHTML = '<div class="cardline">Card on file: ' + brand + '<span class="dots">&bull;&bull;&bull;&bull;</span> ' + esc(a.cardLast4 || '') + (a.cardExp ? ' &middot; expires ' + esc(a.cardExp) : '') + '</div>'
-          + '<div class="reassure-line">&#10003; You&rsquo;re all set &mdash; we&rsquo;ll run your installments on this card, starting November 1.</div>';
+        box.innerHTML = cardOnFileHtml(a, true) + sched
+          + '<div class="reassure-line">&#10003; You&rsquo;re all set &mdash; we&rsquo;ll run your installments on this card, starting November 1.</div>'
+          + '<p class="small" style="margin-top:8px;">Changed your card? It takes about 2 minutes &mdash; then <button type="button" class="link-quiet" onclick="location.reload()">refresh this page</button> to see it here.</p>';
       } else {
-        box.innerHTML = '<div class="cardbox">'
+        box.innerHTML = (a.installments && a.monthly ? '<div class="cardline">' + a.installments + ' monthly installments of <b>' + money(a.monthly) + '</b>' + '</div>' : '')
+          + '<div class="cardbox">'
           + '<p class="cb-t">One last thing &mdash; add your card so your installments run automatically</p>'
           + '<p>Your season is confirmed either way, but a card on file means no invoices to chase and nothing to remember each month.</p>'
           + '<a class="btn-inline" href="https://card.kootenaylawndoctor.com/?e=' + encodeURIComponent(a.email || '') + '" target="_blank" rel="noopener">Add / Update Card &rarr;</a>'
           + '<p style="margin-top:8px;">Bank-grade secure (Authorize.net) &middot; takes about 2 minutes. Come back here and hit confirm once it&rsquo;s done.</p>'
           + '</div>';
       }
+    } else if(sel === 'prepay') {
+      // prepay selected — build the charge-on-file UI
+      buildPrepayUI(a);
+      box.innerHTML = '';
     } else {
       box.innerHTML = '';
+    }
+  }
+
+  function buildPrepayUI(a){
+    var hosted = document.getElementById('prepayhosted');
+    var onfile = document.getElementById('prepayonfile');
+    var decl = document.getElementById('declinemsg');
+    decl.style.display='none';
+    if(a.residential && a.chargeable && a.total){
+      hosted.style.display='none';
+      onfile.style.display='block';
+      onfile.innerHTML = '<div class="paycard">'
+        + cardOnFileHtml(a, true)
+        + '<p>Charge the full season to your card on file right now:</p>'
+        + '<button type="button" class="btn-danger" id="chargebtn">Pay ' + money(a.total) + ' Now &mdash; Charge My Card &rarr;</button>'
+        + '<p style="margin-top:8px;margin-bottom:0;">Prefer to enter a different card? <a href="https://card.kootenaylawndoctor.com/pay/?e=' + encodeURIComponent(e) + '" target="_blank" rel="noopener" style="color:#2563eb;">Use the secure payment page &rarr;</a></p>'
+        + '</div>'
+        + '<div class="confirmbox" id="confirmbox">'
+        + '<p class="c-t">Confirm your payment</p>'
+        + '<p>You\'re about to charge <b>' + money(a.total) + '</b> to your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + '. This pays your 2026&ndash;27 snow season in full.</p>'
+        + '<div class="c-btns"><button type="button" class="btn-danger" id="confirmyes">Yes, charge my card</button>'
+        + '<button type="button" class="btn-ghost" id="confirmno">Go back</button></div>'
+        + '</div>';
+      document.getElementById('chargebtn').addEventListener('click', function(){
+        document.getElementById('confirmbox').style.display='block';
+        this.style.display='none';
+        document.getElementById('confirmbox').scrollIntoView({behavior:'smooth',block:'center'});
+      });
+      document.getElementById('confirmno').addEventListener('click', function(){
+        document.getElementById('confirmbox').style.display='none';
+        document.getElementById('chargebtn').style.display='inline-block';
+      });
+      document.getElementById('confirmyes').addEventListener('click', function(){
+        var yes = this;
+        yes.disabled = true; yes.innerHTML = '<span class="spinner"></span>Charging your card&hellip;';
+        loadJson(API_PAY, {e:e, mode:'charge', confirm:true}).then(function(j){
+          if(j.ok){
+            formwrap.style.display='none'; content.style.display='block';
+            content.innerHTML = '<h1>Paid &mdash; Season Covered</h1><p><span class="ok">&#10003;</span></p>'
+              + '<p style="font-size:17px;">Thanks, ' + esc((window.acct.first||'')) + '. We charged <b>' + money(j.amount) + '</b> to your card ending in ' + esc(j.last4 || (window.acct.cardLast4||'')) + '.</p>'
+              + '<p>Your 2026&ndash;27 snow season is paid in full. Our office has been notified, your account is updated, and a receipt is on its way to your email.</p>'
+              + '<p class="small">You can close this page. Questions? Call us at 250-489-2031.</p>';
+            window.scrollTo(0,0);
+          } else {
+            yes.disabled = false; yes.innerHTML = 'Yes, charge my card';
+            var dm = document.getElementById('declinemsg');
+            dm.textContent = j.declined ? j.friendly : 'We couldn\'t process the charge just now — please try again, or use the secure payment page below.';
+            dm.style.display='block';
+            document.getElementById('confirmbox').style.display='none';
+            document.getElementById('chargebtn').style.display='inline-block';
+            dm.scrollIntoView({behavior:'smooth',block:'center'});
+          }
+        }).catch(function(){
+          yes.disabled = false; yes.innerHTML = 'Yes, charge my card';
+          var dm = document.getElementById('declinemsg');
+          dm.textContent = 'Connection problem — please try again in a few minutes, or call our office at 250-489-2031.';
+          dm.style.display='block';
+          document.getElementById('confirmbox').style.display='none';
+          document.getElementById('chargebtn').style.display='inline-block';
+        });
+      });
+    } else {
+      hosted.style.display='block';
+      onfile.style.display='none';
     }
   }
   window.updateCardPrompt = updateCardPrompt;
@@ -177,13 +324,16 @@
     var btn = this;
     var sel = (document.querySelector('input[name=payplan]:checked')||{}).value;
     if(sel === 'prepay'){
-      showErr('Click the green &ldquo;Prepay the Season&rdquo; button above to pay in one payment.');
+      showErr('Use the prepay options above to pay in one payment.');
       return;
     }
     var a = window.acct || {};
     var first = (a.first||'').trim(), last = (a.last||'').trim(), email = (a.email||'').trim();
     var lines = ['REQUEST: Change payment plan.', 'PREFERRED: Installments with a card on file.',
                  'RENEWAL CONFIRMED by client via installment plan &mdash; set up monthly card billing. (Confirmed from renewal email.)'];
+    if(a.installments && a.monthly){
+      lines.push('MONTHLY PLAN: ' + a.installments + ' installments of $' + Number(a.monthly).toFixed(2) + ', billed on the 1st of each month starting November 1, 2026.');
+    }
     if(a.hasCard && a.cardLast4) lines.push('CARD ON FILE: ends ' + a.cardLast4 + (a.cardExp ? ', exp ' + a.cardExp : '') + '.');
     else lines.push('CLIENT HAS NO CARD ON FILE YET &mdash; card-add link shown on confirm page; office to verify before first billing run.');
     var n = document.getElementById('note').value.trim();
