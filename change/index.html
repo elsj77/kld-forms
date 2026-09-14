@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Change or Cancel Your Snow Season — Kootenay Lawn Doctor</title>
+<style>
+  body{font-family:Segoe UI,Arial,sans-serif;background:#f4f6f8;margin:0;padding:24px 16px;}
+  .wrap{max-width:640px;margin:0 auto;}
+  .card{background:#fff;border-radius:10px;padding:28px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:20px;}
+  .brandbar{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
+  .brandbar img{width:72px;height:72px;border-radius:10px;object-fit:contain;background:#fff;}
+  .brandname{font-size:20px;font-weight:800;color:#0f2338;line-height:1.25;}
+  .brandsub{font-size:13px;color:#667;font-weight:500;}
+  h1{color:#0f2338;font-size:22px;margin:0 0 6px;}
+  h2{color:#0f2338;font-size:17px;margin:26px 0 10px;}
+  p{color:#444;font-size:15px;line-height:1.5;}
+  .small{font-size:13px;color:#777;}
+  .addr{color:#667;font-size:15px;margin:2px 0 18px;}
+  .spinner{display:inline-block;width:18px;height:18px;border:3px solid #d7dee7;border-top-color:#0f2338;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:10px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .ok{color:#15803d;font-weight:700;font-size:44px;line-height:1;}
+  label{display:block;color:#0f2338;font-size:14px;font-weight:600;margin:14px 0 4px;}
+  label .opt{font-weight:400;color:#8a94a0;font-size:12px;}
+  input[type=text],input[type=email],input[type=tel],select,textarea{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #c6cad2;border-radius:8px;font-size:15px;font-family:inherit;color:#1b2933;background:#fff;}
+  input:focus,select:focus,textarea:focus{outline:2px solid #16a34a;border-color:#16a34a;}
+  textarea{resize:vertical;min-height:90px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;}
+  @media(max-width:520px){.grid2{grid-template-columns:1fr;}}
+  .radio-card{display:block;border:1px solid #d7dee7;border-radius:8px;padding:13px 14px;margin:8px 0;cursor:pointer;font-size:15px;color:#1b2933;background:#fff;}
+  .radio-card:hover{border-color:#16a34a;}
+  .radio-card.checked{border:2px solid #16a34a;background:#f0faf3;padding:12px 13px;}
+  .radio-card input{margin-right:10px;vertical-align:-2px;}
+  .checkgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:4px 0 6px;}
+  @media(max-width:520px){.checkgrid{grid-template-columns:1fr;}}
+  .checkitem{display:block;font-size:14px;color:#1b2933;background:#f7f9fb;border:1px solid #e4e9ee;border-radius:7px;padding:9px 11px;cursor:pointer;}
+  .checkitem input{margin-right:8px;vertical-align:-1px;}
+  .checkitem.checked{border-color:#16a34a;background:#f0faf3;}
+  .section{display:none;border:1px solid #e4e9ee;border-radius:10px;padding:16px;margin-top:14px;background:#fbfcfd;}
+  .section.show{display:block;}
+  .btn{background-color:#16a34a;color:#fff;padding:15px 32px;border:none;border-radius:8px;font-size:17px;font-weight:700;cursor:pointer;margin-top:22px;width:100%;}
+  .btn:hover{background-color:#15803d;}
+  .btn[disabled]{background-color:#a7d7b9;cursor:wait;}
+  .err{color:#b91c1c;font-weight:600;font-size:14px;margin-top:12px;display:none;}
+  .quote{display:inline-block;background:#eef4fb;color:#33506e;font-size:12px;font-weight:600;border-radius:6px;padding:3px 9px;margin-left:8px;vertical-align:2px;}
+  .reassure{font-size:13px;color:#67727e;background:#f0f7f2;border:1px solid #d5e9da;border-radius:8px;padding:10px 12px;margin-top:12px;}
+</style>
+</head><body><div class="wrap">
+<div class="card" id="main">
+  <div class="brandbar">
+    <img src="../logo.png" alt="Kootenay Lawn Doctor logo">
+    <div>
+      <div class="brandname">Kootenay Lawn Doctor</div>
+      <div class="brandsub">Lawn Doctor &middot; Mow &amp; Snow &middot; Blue Spruce</div>
+    </div>
+  </div>
+  <div id="content">
+    <h1>Change or Cancel Your Snow Season</h1>
+    <p id="status"><span class="spinner"></span>Loading your details&hellip;</p>
+  </div>
+  <div id="formwrap" style="display:none;">
+    <p class="addr" id="who"></p>
+
+    <h2 style="margin-top:0;">What would you like to do?</h2>
+    <label class="radio-card"><input type="radio" name="choice" value="0"> Adjust my services <span class="opt">(add/remove a service, change frequency)</span></label>
+    <label class="radio-card"><input type="radio" name="choice" value="1"> Change my payment plan</label>
+    <label class="radio-card"><input type="radio" name="choice" value="2"> Cancel my snow season</label>
+    <label class="radio-card"><input type="radio" name="choice" value="3"> Something else</label>
+
+    <div class="section" id="sec-0">
+      <label>What would you like to adjust? <span class="opt">(check all that apply)</span></label>
+      <div class="checkgrid" id="adjustchecks">
+        <label class="checkitem"><input type="checkbox" value="Add driveway"> Add driveway</label>
+        <label class="checkitem"><input type="checkbox" value="Remove driveway"> Remove driveway</label>
+        <label class="checkitem"><input type="checkbox" value="Add walkway"> Add walkway</label>
+        <label class="checkitem"><input type="checkbox" value="Remove walkway"> Remove walkway</label>
+        <label class="checkitem"><input type="checkbox" value="Add de-icing/salting"> Add de-icing / salting</label>
+        <label class="checkitem"><input type="checkbox" value="Remove de-icing/salting"> Remove de-icing / salting</label>
+        <label class="checkitem"><input type="checkbox" value="Change visit frequency"> Change visit frequency</label>
+        <label class="checkitem"><input type="checkbox" value="Update property/access details"> Update property or access details</label>
+      </div>
+      <label>Tell us what you'd like to change</label>
+      <textarea id="adj-details" maxlength="900" placeholder="e.g. remove the walkway shoveling, add the back lane, we got a new gate on the side yard&hellip;"></textarea>
+    </div>
+
+    <div class="section" id="sec-1">
+      <label>How would you prefer to pay for your season?</label>
+      <label class="radio-card"><input type="radio" name="payplan" value="Prepay the full season online"> Prepay the full season online <span class="opt">(we'll send you the secure link)</span></label>
+      <label class="radio-card"><input type="radio" name="payplan" value="Installments with a card on file"> Installments with a card on file <span class="opt">(we'll set that up with you)</span></label>
+      <label class="radio-card"><input type="radio" name="payplan" value="E-transfer"> E-transfer</label>
+      <label class="radio-card"><input type="radio" name="payplan" value="Cheque"> Cheque</label>
+      <label>Anything we should know? <span class="opt">(optional)</span></label>
+      <textarea id="pay-note" maxlength="900" placeholder="Optional"></textarea>
+    </div>
+
+    <div class="section" id="sec-2">
+      <label>Reason for cancelling <span class="opt">(optional — helps us improve)</span></label>
+      <select id="cancel-reason">
+        <option value="">Prefer not to say</option>
+        <option>Moving</option>
+        <option>No longer needed</option>
+        <option>Price</option>
+        <option>Service concern</option>
+        <option>Chose another company</option>
+        <option>Other</option>
+      </select>
+      <label>Anything you'd like us to know? <span class="opt">(optional)</span></label>
+      <textarea id="cancel-note" maxlength="900" placeholder="Optional"></textarea>
+      <div class="reassure">This sends your request to our office — we'll confirm your cancellation by email before it takes effect. If you've already prepaid, we'll sort out your refund when we confirm.</div>
+    </div>
+
+    <div class="section" id="sec-3">
+      <label>Tell us what you need</label>
+      <textarea id="other-details" maxlength="900" placeholder="How can we help?"></textarea>
+    </div>
+
+    <h2>Best way to reach you</h2>
+    <label class="radio-card"><input type="radio" name="contactpref" value="0" checked> Phone call</label>
+    <label class="radio-card"><input type="radio" name="contactpref" value="1"> Email</label>
+
+    <h2>Your details <span class="opt" style="font-weight:400;color:#8a94a0;font-size:12px;">(pre-filled from your account — fix anything that's changed)</span></h2>
+    <div class="grid2">
+      <div><label>First Name</label><input type="text" id="f-first"></div>
+      <div><label>Last Name</label><input type="text" id="f-last"></div>
+    </div>
+    <label>Email</label><input type="email" id="f-email">
+    <label>Phone Number <span class="opt">(optional)</span></label><input type="tel" id="f-phone">
+    <label>Street Address</label><input type="text" id="f-street">
+    <div class="grid2">
+      <div><label>City</label><input type="text" id="f-city"></div>
+      <div><label>Postal Code <span class="opt">(optional)</span></label><input type="text" id="f-postal"></div>
+    </div>
+
+    <div class="err" id="err"></div>
+    <button class="btn" id="submitbtn">Send My Request &nbsp;&rarr;</button>
+    <p class="small" style="margin-top:14px;">Goes straight to our office — we'll follow up to confirm before anything changes.</p>
+  </div>
+</div>
+<div class="card"><p class="small" style="margin:0;">Questions? Call our office at 250-489-2031 &mdash; Cranbrook &amp; Kimberley, Fernie, Sparwood &amp; Elkford.</p></div>
+</div>
+<script>
+(function(){
+  var API = 'https://doc-pro-781789de.base44.app/functions/snowChangeRequest';
+  var qs = new URLSearchParams(location.search);
+  var e = (qs.get('e')||'').trim();
+  var content = document.getElementById('content');
+  var formwrap = document.getElementById('formwrap');
+  var errEl = document.getElementById('err');
+
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fail(msg){
+    formwrap.style.display='none';
+    content.innerHTML = '<h1>Change or Cancel Your Snow Season</h1><p style="color:#b91c1c;font-weight:600;">' + msg + '</p><p class="small">You can also call our office at 250-489-2031 and we\'ll take care of it over the phone.</p>';
+  }
+  function showErr(msg){ errEl.textContent = msg; errEl.style.display = 'block'; errEl.scrollIntoView({behavior:'smooth',block:'center'}); }
+
+  if(!e || !/^\d{1,8}$/.test(e)){
+    fail('This link looks incomplete. Please use the &ldquo;Change or Cancel&rdquo; button in your renewal email.');
+    return;
+  }
+
+  fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({e:e, mode:'lookup'})})
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if(j.error){ fail(j.error==='not_found' ? 'We couldn\'t find your renewal quote. Please use the exact link from your renewal email, or call our office.' : 'We couldn\'t load your details right now. Please try again in a few minutes, or call our office at 250-489-2031.'); return; }
+      document.getElementById('who').innerHTML = esc(j.client) + (j.street||j.city ? ' &mdash; ' + esc([j.street, j.city].filter(Boolean).join(', ')) : '') + '<span class="quote">Snow renewal #' + esc(e) + '</span>';
+      document.getElementById('f-first').value = j.first || '';
+      document.getElementById('f-last').value = j.last || '';
+      document.getElementById('f-email').value = j.email || '';
+      document.getElementById('f-phone').value = j.phone || '';
+      document.getElementById('f-street').value = j.street || '';
+      document.getElementById('f-city').value = j.city || '';
+      document.getElementById('f-postal').value = j.postal || '';
+      content.style.display='none';
+      formwrap.style.display='block';
+    })
+    .catch(function(){ fail('Connection problem &mdash; please try again in a few minutes, or call our office.'); });
+
+  // choice → conditional section + radio-card highlight
+  var sections = ['sec-0','sec-1','sec-2','sec-3'];
+  var choice = null;
+  document.querySelectorAll('input[name=choice]').forEach(function(r){
+    r.addEventListener('change', function(){
+      choice = r.value;
+      document.querySelectorAll('label.radio-card').forEach(function(l){ l.classList.remove('checked'); });
+      r.closest('label.radio-card').classList.add('checked');
+      sections.forEach(function(id){ document.getElementById(id).classList.toggle('show', id === 'sec-' + choice); });
+      errEl.style.display='none';
+    });
+  });
+  document.querySelectorAll('#adjustchecks input[type=checkbox]').forEach(function(c){
+    c.addEventListener('change', function(){ c.closest('label.checkitem').classList.toggle('checked', c.checked); });
+  });
+  document.querySelectorAll('input[name=payplan]').forEach(function(r){
+    r.addEventListener('change', function(){
+      document.querySelectorAll('input[name=payplan]').forEach(function(o){ o.closest('label.radio-card').classList.remove('checked'); });
+      r.closest('label.radio-card').classList.add('checked');
+    });
+  });
+
+  function composeDetails(){
+    var lines = [];
+    if(choice === '0'){
+      lines.push('REQUEST: Adjust services.');
+      var checks = [];
+      document.querySelectorAll('#adjustchecks input:checked').forEach(function(c){ checks.push(c.value); });
+      if(checks.length) lines.push('CHANGES: ' + checks.join('; ') + '.');
+      var d = document.getElementById('adj-details').value.trim();
+      lines.push('DETAILS: ' + (d || '(no extra details)'));
+    } else if(choice === '1'){
+      lines.push('REQUEST: Change payment plan.');
+      var sel = document.querySelector('input[name=payplan]:checked');
+      lines.push('PREFERRED: ' + (sel ? sel.value : '(not specified)') + '.');
+      var n = document.getElementById('pay-note').value.trim();
+      if(n) lines.push('DETAILS: ' + n);
+    } else if(choice === '2'){
+      lines.push('REQUEST: Cancel snow season.');
+      var reason = document.getElementById('cancel-reason').value;
+      if(reason) lines.push('REASON: ' + reason + '.');
+      var cn = document.getElementById('cancel-note').value.trim();
+      if(cn) lines.push('DETAILS: ' + cn);
+    } else {
+      lines.push('REQUEST: Something else.');
+      lines.push('DETAILS: ' + document.getElementById('other-details').value.trim());
+    }
+    var contactPref = document.querySelector('input[name=contactpref]:checked').value;
+    lines.push('CONTACT PREFERENCE: ' + (contactPref === '0' ? 'Phone call' : 'Email') + '.');
+    return lines.join(' ');
+  }
+
+  document.getElementById('submitbtn').addEventListener('click', function(){
+    errEl.style.display='none';
+    var btn = this;
+    if(choice === null){ showErr('Please choose what you\'d like to do.'); return; }
+    if(choice === '0' && !document.getElementById('adj-details').value.trim() && !document.querySelector('#adjustchecks input:checked')){
+      showErr('Tell us what you\'d like to adjust — check an option or add a note below.'); return;
+    }
+    if(choice === '3' && !document.getElementById('other-details').value.trim()){
+      showErr('Tell us what you need.'); return;
+    }
+    var first = document.getElementById('f-first').value.trim();
+    var last = document.getElementById('f-last').value.trim();
+    var email = document.getElementById('f-email').value.trim();
+    var street = document.getElementById('f-street').value.trim();
+    var city = document.getElementById('f-city').value.trim();
+    if(!first || !last || !street || !city){ showErr('Please fill in your name, street address, and city.'); return; }
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ showErr('Please enter a valid email address.'); return; }
+
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Sending&hellip;';
+    var contactPref = document.querySelector('input[name=contactpref]:checked').value;
+    fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+      e:e, mode:'submit', choice:choice, details:composeDetails(), contactPref:contactPref,
+      first:first, last:last, email:email,
+      phone:document.getElementById('f-phone').value.trim(),
+      street:street, city:city, postal:document.getElementById('f-postal').value.trim()
+    })})
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if(j.ok){
+          formwrap.style.display='none'; content.style.display='block';
+          content.innerHTML = '<h1>Got It — Request Sent</h1><p><span class="ok">&#10003;</span></p>'
+            + '<p style="font-size:17px;">Thanks, ' + esc(first) + '. Your request is with our office now — we\'ll reach out to confirm before anything changes.</p>'
+            + '<p class="small">You can close this page. Need something sooner? Call us at 250-489-2031.</p>';
+          window.scrollTo(0,0);
+        } else {
+          btn.disabled = false; btn.innerHTML = 'Send My Request &nbsp;&rarr;';
+          showErr(j.error==='missing_fields' ? 'Please fill in the required fields and try again.' : 'We couldn\'t send your request just now — please try again in a moment, or call us at 250-489-2031.');
+        }
+      })
+      .catch(function(){
+        btn.disabled = false; btn.innerHTML = 'Send My Request &nbsp;&rarr;';
+        showErr('Connection problem — please try again in a few minutes, or call our office at 250-489-2031.');
+      });
+  });
+})();
+</script>
+</body></html>
