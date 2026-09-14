@@ -43,6 +43,16 @@
   .btn[disabled]{background-color:#a7d7b9;cursor:wait;}
   .err{color:#b91c1c;font-weight:600;font-size:14px;margin-top:12px;display:none;}
   .quote{display:inline-block;background:#eef4fb;color:#33506e;font-size:12px;font-weight:600;border-radius:6px;padding:3px 9px;margin-left:8px;vertical-align:2px;}
+    .acct{background:#f7f9fb;border:1px solid #dfe6ec;border-radius:10px;padding:16px 18px;margin:0 0 22px;}
+  .acct .lbl{font-size:11px;font-weight:700;letter-spacing:.06em;color:#8a94a0;text-transform:uppercase;margin:0 0 8px;}
+  .acct .row{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;}
+  @media(max-width:520px){.acct .row{grid-template-columns:1fr;}}
+  .acct .f{min-width:0;}
+  .acct .k{font-size:11px;color:#8a94a0;font-weight:600;margin:0 0 2px;}
+  .acct .v{font-size:14.5px;color:#1b2933;font-weight:600;overflow-wrap:anywhere;}
+  .acct .full{grid-column:1 / -1;}
+  .acct .note{font-size:12px;color:#8a94a0;margin:12px 0 0;line-height:1.5;}
+  .acct .chips{margin-top:12px;}
   .reassure{font-size:13px;color:#67727e;background:#f0f7f2;border:1px solid #d5e9da;border-radius:8px;padding:10px 12px;margin-top:12px;}
 </style>
 </head><body><div class="wrap">
@@ -59,7 +69,7 @@
     <p id="status"><span class="spinner"></span>Loading your details&hellip;</p>
   </div>
   <div id="formwrap" style="display:none;">
-    <p class="addr" id="who"></p>
+    <div class="acct" id="who" style="display:none;"></div>
 
     <h2 style="margin-top:0;">What would you like to do?</h2>
     <label class="radio-card"><input type="radio" name="choice" value="0"> Adjust my services <span class="opt">(add/remove a service, change frequency)</span></label>
@@ -118,18 +128,6 @@
     <label class="radio-card"><input type="radio" name="contactpref" value="0" checked> Phone call</label>
     <label class="radio-card"><input type="radio" name="contactpref" value="1"> Email</label>
 
-    <h2>Your details <span class="opt" style="font-weight:400;color:#8a94a0;font-size:12px;">(pre-filled from your account — fix anything that's changed)</span></h2>
-    <div class="grid2">
-      <div><label>First Name</label><input type="text" id="f-first"></div>
-      <div><label>Last Name</label><input type="text" id="f-last"></div>
-    </div>
-    <label>Email</label><input type="email" id="f-email">
-    <label>Phone Number <span class="opt">(optional)</span></label><input type="tel" id="f-phone">
-    <label>Street Address</label><input type="text" id="f-street">
-    <div class="grid2">
-      <div><label>City</label><input type="text" id="f-city"></div>
-      <div><label>Postal Code <span class="opt">(optional)</span></label><input type="text" id="f-postal"></div>
-    </div>
 
     <div class="err" id="err"></div>
     <button class="btn" id="submitbtn">Send My Request &nbsp;&rarr;</button>
@@ -163,14 +161,18 @@
     .then(function(r){ return r.json(); })
     .then(function(j){
       if(j.error){ fail(j.error==='not_found' ? 'We couldn\'t find your renewal quote. Please use the exact link from your renewal email, or call our office.' : 'We couldn\'t load your details right now. Please try again in a few minutes, or call our office at 250-489-2031.'); return; }
-      document.getElementById('who').innerHTML = esc(j.client) + (j.street||j.city ? ' &mdash; ' + esc([j.street, j.city].filter(Boolean).join(', ')) : '') + '<span class="quote">Snow renewal #' + esc(e) + '</span>';
-      document.getElementById('f-first').value = j.first || '';
-      document.getElementById('f-last').value = j.last || '';
-      document.getElementById('f-email').value = j.email || '';
-      document.getElementById('f-phone').value = j.phone || '';
-      document.getElementById('f-street').value = j.street || '';
-      document.getElementById('f-city').value = j.city || '';
-      document.getElementById('f-postal').value = j.postal || '';
+      window.acct = j;
+      var who = document.getElementById('who');
+      who.innerHTML = '<p class="lbl">Confirming details for</p>'
+        + '<div class="row">'
+        + '<div class="f"><p class="k">Name</p><p class="v">' + esc([j.first,j.last].filter(Boolean).join(' ')) + '</p></div>'
+        + '<div class="f"><p class="k">Phone</p><p class="v">' + esc(j.phone || '—') + '</p></div>'
+        + '<div class="f"><p class="k">Email</p><p class="v">' + esc(j.email || '—') + '</p></div>'
+        + '<div class="f"><p class="k">Service address</p><p class="v">' + esc([j.street,j.city,j.postal].filter(Boolean).join(', ')) + '</p></div>'
+        + '</div>'
+        + '<div class="chips"><span class="quote">Snow renewal #' + esc(e) + '</span></div>'
+        + '<p class="note">These come straight from your account. If anything has changed, just tell us in your note below and we&rsquo;ll update it when we confirm.</p>';
+      who.style.display='block';
       content.style.display='none';
       formwrap.style.display='block';
     })
@@ -238,21 +240,16 @@
     if(choice === '3' && !document.getElementById('other-details').value.trim()){
       showErr('Tell us what you need.'); return;
     }
-    var first = document.getElementById('f-first').value.trim();
-    var last = document.getElementById('f-last').value.trim();
-    var email = document.getElementById('f-email').value.trim();
-    var street = document.getElementById('f-street').value.trim();
-    var city = document.getElementById('f-city').value.trim();
-    if(!first || !last || !street || !city){ showErr('Please fill in your name, street address, and city.'); return; }
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ showErr('Please enter a valid email address.'); return; }
+    var a = window.acct || {};
+    var first = (a.first||'').trim(), last = (a.last||'').trim(), email = (a.email||'').trim();
 
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Sending&hellip;';
     var contactPref = document.querySelector('input[name=contactpref]:checked').value;
     fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
       e:e, mode:'submit', choice:choice, details:composeDetails(), contactPref:contactPref,
       first:first, last:last, email:email,
-      phone:document.getElementById('f-phone').value.trim(),
-      street:street, city:city, postal:document.getElementById('f-postal').value.trim()
+      phone:(a.phone||'').trim(),
+      street:(a.street||'').trim(), city:(a.city||'').trim(), postal:(a.postal||'').trim()
     })})
       .then(function(r){ return r.json(); })
       .then(function(j){
