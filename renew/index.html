@@ -75,6 +75,14 @@
   .btn-danger[disabled]{background-color:#a7d7b9;cursor:wait;}
   .btn-ghost{background-color:#fff;color:#475569;border:1px solid #c6cad2;padding:13px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}
   .declinemsg{margin-top:10px;border:1px solid #f3c8c8;background:#fdf3f3;border-radius:10px;padding:12px 14px;font-size:13.5px;color:#b91c1c;display:none;font-weight:600;}
+  .sel-amt{font-weight:800;color:#0f2338;}
+  .radio-card.warn{border:2px solid #ef4444;background:#fef2f2;padding:12px 13px;}
+  .radio-card.warn:hover{border-color:#dc2626;}
+  .req-tag{display:inline-block;background:#dc2626;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.05em;border-radius:5px;padding:2px 7px;margin-left:6px;vertical-align:2px;text-transform:uppercase;}
+  .chgbtn{display:inline-block;margin-top:8px;background:#fff;border:1.5px solid #16a34a;color:#15803d;font-weight:700;font-size:13px;border-radius:8px;padding:8px 16px;text-decoration:none;cursor:pointer;}
+  .chgbtn:hover{background:#f0faf3;}
+  .cardbox.need{border-color:#f3c8c8;background:#fff7f7;}
+  .cardbox.need .cb-t{color:#b91c1c;}
 </style>
 </head><body><div class="wrap">
 <div class="card" id="main">
@@ -93,9 +101,9 @@
     <div class="acct" id="who" style="display:none;"></div>
 
     <h2 style="margin-top:0;">How would you like to pay for your season?</h2>
-    <label class="radio-card"><input type="radio" name="payplan" value="installments" checked> Monthly installments &mdash; billed to my card on file<span class="rec-tag">Recommended</span><br><span class="opt" id="instopt">Your renewal is confirmed right away. Your card is billed automatically on the 1st of each month &mdash; no invoices to chase, nothing to remember.</span></label>
-    <label class="radio-card"><input type="radio" name="payplan" value="prepay"> Prepay the full season <span class="opt">(one single payment)</span></label>
+    <label class="radio-card" id="rc-installments"><input type="radio" name="payplan" value="installments" checked> Monthly installments <span class="sel-amt" id="instamt"></span>&mdash; billed to my card on file<span class="rec-tag">Recommended</span><br><span class="opt" id="instopt">Your renewal is confirmed right away. Your card is billed automatically on the 1st of each month &mdash; no invoices to chase, nothing to remember.</span></label>
     <div id="cardprompt"></div>
+    <label class="radio-card" id="rc-prepay"><input type="radio" name="payplan" value="prepay"> Prepay the full season <span class="sel-amt" id="prepayamt"></span><span class="opt">(one single payment)</span></label>
     <div class="prepaybox" id="prepaybox">
       <div id="prepayhosted">
         <p>Pay your full season in one secure payment:</p>
@@ -216,41 +224,76 @@
 
   function cardOnFileHtml(a, withChangeLink){
     var brand = a.cardBrand ? esc(a.cardBrand) + ' ' : '';
-    var h = '<div class="cardline">Card on file: ' + brand + '<span class="dots">&bull;&bull;&bull;&bull;</span> ' + esc(a.cardLast4 || '') + (a.cardExp ? ' &middot; expires ' + esc(a.cardExp) : '');
+    var h = '<div class="cardline">Card on file: ' + brand + '<span class="dots">&bull;&bull;&bull;&bull;</span> ' + esc(a.cardLast4 || '') + (a.cardExp ? ' &middot; expires ' + esc(a.cardExp) : '') + '</div>';
     if(withChangeLink){
-      h += ' &nbsp;<span class="chg">&middot; <a href="https://card.kootenaylawndoctor.com/?e=' + encodeURIComponent(a.email || '') + '" target="_blank" rel="noopener" style="color:#2563eb;">Use a different card &rarr;</a></span>';
+      h += '<a class="chgbtn" href="https://card.kootenaylawndoctor.com/?e=' + encodeURIComponent(a.email || '') + '" target="_blank" rel="noopener">Use a different card</a>';
     }
-    h += '</div>';
     return h;
+  }
+
+  // ── card-added auto-detection: poll while installments + no card ──
+  var pollTimer = null;
+  function stopPoll(){ if(pollTimer){ clearInterval(pollTimer); pollTimer = null; } }
+  function startPoll(){ if(pollTimer) return; pollTimer = setInterval(function(){ checkCardNow(); }, 10000); }
+  function checkCardNow(cb){
+    loadJson(API_PAY, {e:e, mode:'lookup'}).then(function(p){
+      if(p && !p.error && p.cardLast4){
+        window.acct.hasCard = true; window.acct.chargeable = !!p.chargeable;
+        window.acct.cardLast4 = p.cardLast4; window.acct.cardExp = p.cardExp; window.acct.cardBrand = p.cardBrand;
+        stopPoll(); updateCardPrompt();
+        if(cb) cb(true);
+      } else if(cb) cb(false);
+    }).catch(function(){ if(cb) cb(false); });
+  }
+  function updateSubmitState(blocked){
+    var btn = document.getElementById('submitbtn');
+    if(blocked){ btn.disabled = true; btn.innerHTML = 'Add a Card Above to Confirm'; }
+    else if(btn.disabled && btn.dataset.busy !== '1'){ btn.disabled = false; btn.innerHTML = 'Confirm My Renewal &nbsp;&rarr;'; }
   }
 
   function updateCardPrompt(){
     var box = document.getElementById('cardprompt');
     var pre = document.getElementById('prepaybox');
+    var rci = document.getElementById('rc-installments');
     var sel = (document.querySelector('input[name=payplan]:checked')||{}).value;
     var a = window.acct || {};
     pre.classList.toggle('show', sel === 'prepay');
+    // amounts right in the selectors
+    if(a.installments && a.monthly){ document.getElementById('instamt').textContent = '\u2014 ' + (a.installments === 1 ? money(a.monthly) : a.installments + ' payments of ' + money(a.monthly)) + ' '; }
+    if(a.total){ document.getElementById('prepayamt').textContent = '\u2014 ' + money(a.total) + ' '; }
     if(sel === 'installments' && a.residential){
       var sched = (a.installments && a.monthly && a.total) ? schedHtml(a.installments, a.monthly, a.total) : '';
       if(a.hasCard){
+        rci.classList.remove('warn'); stopPoll();
         box.innerHTML = cardOnFileHtml(a, true) + sched
           + '<div class="reassure-line">&#10003; You&rsquo;re all set &mdash; we&rsquo;ll run your installments on this card, starting November 1.</div>'
           + '<p class="small" style="margin-top:8px;">Changed your card? It takes about 2 minutes &mdash; then <button type="button" class="link-quiet" onclick="location.reload()">refresh this page</button> to see it here.</p>';
+        updateSubmitState(false);
       } else {
-        box.innerHTML = (a.installments && a.monthly ? '<div class="cardline">' + a.installments + ' monthly installments of <b>' + money(a.monthly) + '</b>' + '</div>' : '')
-          + '<div class="cardbox">'
-          + '<p class="cb-t">One last thing &mdash; add your card so your installments run automatically</p>'
-          + '<p>Your season is confirmed either way, but a card on file means no invoices to chase and nothing to remember each month.</p>'
+        rci.classList.add('warn');
+        box.innerHTML = '<div class="cardbox need">'
+          + '<p class="cb-t">A card saved on file is required for monthly installments</p>'
+          + '<p>Your card is billed automatically on the 1st of each month &mdash; we can&rsquo;t set that up until a card is on file. Add one now (bank-grade secure, about 2 minutes):</p>'
           + '<a class="btn-inline" href="https://card.kootenaylawndoctor.com/?e=' + encodeURIComponent(a.email || '') + '" target="_blank" rel="noopener">Add / Update Card &rarr;</a>'
-          + '<p style="margin-top:8px;">Bank-grade secure (Authorize.net) &middot; takes about 2 minutes. Come back here and hit confirm once it&rsquo;s done.</p>'
+          + '<div style="margin-top:10px;"><button type="button" class="link-quiet" id="checkcardbtn">I&rsquo;ve added my card &mdash; check again</button></div>'
+          + '<p style="margin-top:8px;margin-bottom:0;" class="small">We also check automatically every 10 seconds &mdash; the moment your card lands, your renewal unlocks right here.</p>'
           + '</div>';
+        document.getElementById('checkcardbtn').addEventListener('click', function(){
+          var b = this; b.disabled = true; b.textContent = 'Checking\u2026';
+          checkCardNow(function(ok){ if(!ok){ b.disabled = false; b.textContent = 'I\u2019ve added my card \u2014 check again'; } });
+        });
+        startPoll();
+        updateSubmitState(true);
       }
     } else if(sel === 'prepay') {
-      // prepay selected — build the charge-on-file UI
+      rci.classList.remove('warn'); stopPoll();
       buildPrepayUI(a);
       box.innerHTML = '';
+      updateSubmitState(false);
     } else {
+      rci.classList.remove('warn'); stopPoll();
       box.innerHTML = '';
+      updateSubmitState(false);
     }
   }
 
@@ -265,8 +308,7 @@
       onfile.innerHTML = '<div class="paycard">'
         + cardOnFileHtml(a, true)
         + '<p>Charge the full season to your card on file right now:</p>'
-        + '<button type="button" class="btn-danger" id="chargebtn">Pay ' + money(a.total) + ' Now &mdash; Charge My Card &rarr;</button>'
-        + '<p style="margin-top:8px;margin-bottom:0;">Prefer to enter a different card? <a href="https://card.kootenaylawndoctor.com/pay/?e=' + encodeURIComponent(e) + '" target="_blank" rel="noopener" style="color:#2563eb;">Use the secure payment page &rarr;</a></p>'
+        + '<button type="button" class="btn-danger" id="chargebtn">Pay ' + money(a.total) + ' Now &mdash; Charge Card &bull;&bull;&bull;&bull; ' + esc(a.cardLast4 || '') + ' &rarr;</button>'
         + '</div>'
         + '<div class="confirmbox" id="confirmbox">'
         + '<p class="c-t">Confirm your payment</p>'
@@ -321,13 +363,17 @@
 
   document.getElementById('submitbtn').addEventListener('click', function(){
     errEl.style.display='none';
-    var btn = this;
+    var btn = this; btn.dataset.busy = '1'; stopPoll();
     var sel = (document.querySelector('input[name=payplan]:checked')||{}).value;
     if(sel === 'prepay'){
       showErr('Use the prepay options above to pay in one payment.');
       return;
     }
     var a = window.acct || {};
+    if(sel === 'installments' && a.residential && !a.hasCard){
+      showErr('A card saved on file is required for monthly installments. Please add your card above, or choose prepay instead.');
+      return;
+    }
     var first = (a.first||'').trim(), last = (a.last||'').trim(), email = (a.email||'').trim();
     var lines = ['REQUEST: Change payment plan.', 'PREFERRED: Installments with a card on file.',
                  'RENEWAL CONFIRMED by client via installment plan &mdash; set up monthly card billing. (Confirmed from renewal email.)'];
@@ -361,12 +407,12 @@
             + '<p class="small">A confirmation is on its way to your email. You can close this page. Need something sooner? Call us at 250-489-2031.</p>';
           window.scrollTo(0,0);
         } else {
-          btn.disabled = false; btn.innerHTML = 'Confirm My Renewal &nbsp;&rarr;';
+          btn.disabled = false; btn.dataset.busy = ''; btn.innerHTML = 'Confirm My Renewal &nbsp;&rarr;';
           showErr(j.error==='missing_fields' ? 'Please fill in the required fields and try again.' : 'We couldn\'t send your confirmation just now — please try again in a moment, or call us at 250-489-2031.');
         }
       })
       .catch(function(){
-        btn.disabled = false; btn.innerHTML = 'Confirm My Renewal &nbsp;&rarr;';
+        btn.disabled = false; btn.dataset.busy = ''; btn.innerHTML = 'Confirm My Renewal &nbsp;&rarr;';
         showErr('Connection problem — please try again in a few minutes, or call our office at 250-489-2031.');
       });
   });
