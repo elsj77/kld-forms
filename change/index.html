@@ -53,6 +53,13 @@
   .acct .full{grid-column:1 / -1;}
   .acct .note{font-size:12px;color:#8a94a0;margin:12px 0 0;line-height:1.5;}
   .acct .chips{margin-top:12px;}
+  .rec-tag{display:inline-block;background:#16a34a;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.05em;border-radius:5px;padding:2px 7px;margin-left:6px;vertical-align:2px;text-transform:uppercase;}
+  .cardbox{margin-top:14px;border:1px solid #bcd9c6;background:#f0faf3;border-radius:10px;padding:15px 16px;}
+  .cardbox .cb-t{font-size:14.5px;font-weight:700;color:#14532d;margin:0 0 4px;}
+  .cardbox p{margin:0 0 10px;font-size:13.5px;color:#3d5a47;}
+  .btn-inline{display:inline-block;background-color:#16a34a;color:#fff;padding:11px 22px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;}
+  .btn-inline:hover{background-color:#15803d;}
+  .reassure-line{margin-top:14px;font-size:13.5px;color:#3d5a47;background:#f0faf3;border:1px solid #bcd9c6;border-radius:10px;padding:12px 14px;font-weight:600;}
   .reassure{font-size:13px;color:#67727e;background:#f0f7f2;border:1px solid #d5e9da;border-radius:8px;padding:10px 12px;margin-top:12px;}
 </style>
 </head><body><div class="wrap">
@@ -95,10 +102,11 @@
 
     <div class="section" id="sec-1">
       <label>How would you prefer to pay for your season?</label>
-      <label class="radio-card"><input type="radio" name="payplan" value="Prepay the full season online"> Prepay the full season online <span class="opt">(we'll send you the secure link)</span></label>
-      <label class="radio-card"><input type="radio" name="payplan" value="Installments with a card on file"> Installments with a card on file <span class="opt">(we'll set that up with you)</span></label>
+      <label class="radio-card"><input type="radio" name="payplan" value="Installments with a card on file"> Installments with a card on file<span class="rec-tag">Recommended</span><br><span class="opt">Your renewal is confirmed right away &mdash; your card is billed automatically each month. Nothing more to do.</span></label>
+      <label class="radio-card"><input type="radio" name="payplan" value="Prepay the full season online"> Prepay the full season online <span class="opt">(we'll send you the secure payment link)</span></label>
       <label class="radio-card"><input type="radio" name="payplan" value="E-transfer"> E-transfer</label>
       <label class="radio-card"><input type="radio" name="payplan" value="Cheque"> Cheque</label>
+      <div id="cardprompt"></div>
       <label>Anything we should know? <span class="opt">(optional)</span></label>
       <textarea id="pay-note" maxlength="900" placeholder="Optional"></textarea>
     </div>
@@ -197,8 +205,27 @@
     r.addEventListener('change', function(){
       document.querySelectorAll('input[name=payplan]').forEach(function(o){ o.closest('label.radio-card').classList.remove('checked'); });
       r.closest('label.radio-card').classList.add('checked');
+      updateCardPrompt(r.value);
     });
   });
+  function updateCardPrompt(val){
+    var box = document.getElementById('cardprompt');
+    var a = window.acct || {};
+    if(val === 'Installments with a card on file' && a.residential){
+      if(a.hasCard){
+        box.innerHTML = '<div class="reassure-line">&#10003; You&rsquo;re all set &mdash; we&rsquo;ll run your installments on the card you have on file with us.</div>';
+      } else {
+        box.innerHTML = '<div class="cardbox">'
+          + '<p class="cb-t">One last thing &mdash; add your card so your installments run automatically</p>'
+          + '<p>Your season is confirmed either way, but a card on file means no invoices to chase and nothing to remember each month.</p>'
+          + '<a class="btn-inline" href="https://card.kootenaylawndoctor.com/?e=' + encodeURIComponent(a.email || '') + '" target="_blank" rel="noopener">Add / Update Card &rarr;</a>'
+          + '<p style="margin-top:8px;">Bank-grade secure (Authorize.net) &middot; takes about 2 minutes.</p>'
+          + '</div>';
+      }
+    } else {
+      box.innerHTML = '';
+    }
+  }
 
   function composeDetails(){
     var lines = [];
@@ -212,7 +239,9 @@
     } else if(choice === '1'){
       lines.push('REQUEST: Change payment plan.');
       var sel = document.querySelector('input[name=payplan]:checked');
-      lines.push('PREFERRED: ' + (sel ? sel.value : '(not specified)') + '.');
+      var pref = sel ? sel.value : '(not specified)';
+      lines.push('PREFERRED: ' + pref + '.');
+      if(pref === 'Installments with a card on file') lines.push('RENEWAL CONFIRMED by client via installment plan &mdash; set up monthly card billing.');
       var n = document.getElementById('pay-note').value.trim();
       if(n) lines.push('DETAILS: ' + n);
     } else if(choice === '2'){
