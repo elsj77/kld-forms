@@ -83,6 +83,20 @@
   .chgbtn:hover{background:#f0faf3;}
   .cardbox.need{border-color:#f3c8c8;background:#fff7f7;}
   .cardbox.need .cb-t{color:#b91c1c;}
+  .svc{margin:0 0 22px;border:1px solid #dfe6ec;border-radius:10px;overflow:hidden;background:#fff;}
+  .svc .s-t{background:#f7f9fb;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#6b7684;padding:9px 14px;border-bottom:1px solid #dfe6ec;}
+  .svc .s-r{display:flex;justify-content:space-between;gap:14px;padding:10px 14px;font-size:13.5px;color:#1b2933;border-bottom:1px solid #eef1f5;align-items:baseline;}
+  .svc .s-r:last-child{border-bottom:none;}
+  .svc .s-l{min-width:0;}
+  .svc .s-n{font-weight:700;font-size:14px;}
+  .svc .s-d{color:#64748b;font-size:12.5px;margin-top:2px;}
+  .svc .s-r2{color:#0f2338;white-space:nowrap;text-align:right;}
+  .svc .s-m{display:block;color:#8a94a0;font-size:11.5px;font-weight:400;}
+  .svc .s-sum{background:#f8fafc;border-top:1px solid #dfe6ec;padding:9px 14px;font-size:13px;color:#475569;}
+  .svc .s-sum .row{display:flex;justify-content:space-between;padding:3px 0;}
+  .svc .s-sum .row.grand{color:#0369a1;font-weight:800;font-size:15px;padding-top:7px;}
+  .terms{margin-top:14px;font-size:13px;color:#64748b;line-height:1.6;}
+  .terms a{color:#2563eb;font-weight:600;}
 </style>
 </head><body><div class="wrap">
 <div class="card" id="main">
@@ -94,14 +108,15 @@
     </div>
   </div>
   <div id="content">
-    <h1>Confirm Your Snow Season</h1>
+    <h1 id="maintitle">Confirm Your Snow Season</h1>
     <p id="status"><span class="spinner"></span>Loading your details&hellip;</p>
   </div>
   <div id="formwrap" style="display:none;">
     <div class="acct" id="who" style="display:none;"></div>
+    <div class="svc" id="services" style="display:none;"></div>
 
-    <h2 style="margin-top:0;">How would you like to pay for your season?</h2>
-    <label class="radio-card" id="rc-installments"><input type="radio" name="payplan" value="installments" checked> Monthly installments <span class="sel-amt" id="instamt"></span>&mdash; billed to my card on file<span class="rec-tag">Recommended</span><br><span class="opt" id="instopt">Your renewal is confirmed right away. Your card is billed automatically on the 1st of each month &mdash; no invoices to chase, nothing to remember.</span></label>
+    <h2 style="margin-top:0;" id="payhead">How would you like to pay for your season?</h2>
+    <label class="radio-card" id="rc-installments"><input type="radio" name="payplan" value="installments" checked> <span id="inst-head">Monthly installments </span><span class="sel-amt" id="instamt"></span><span id="inst-dash">&mdash; billed to my card on file</span><span class="rec-tag" id="inst-tag">Recommended</span><br><span class="opt" id="instopt"></span></label>
     <div id="cardprompt"></div>
     <label class="radio-card" id="rc-prepay"><input type="radio" name="payplan" value="prepay"> Prepay the full season <span class="sel-amt" id="prepayamt"></span><span class="opt">(one single payment)</span></label>
     <div class="prepaybox" id="prepaybox">
@@ -119,7 +134,8 @@
 
     <div class="err" id="err"></div>
     <button class="btn" id="submitbtn">Confirm My Renewal &nbsp;&rarr;</button>
-    <p class="small" style="margin-top:14px;">Your renewal is confirmed the moment you send &mdash; we&rsquo;ll email you to confirm the setup. Prefer to think about it? Doing nothing also renews your season automatically on November 1.</p>
+    <p class="small" id="footnote" style="margin-top:14px;">Your renewal is confirmed the moment you send &mdash; we&rsquo;ll email you to confirm the setup. Prefer to think about it? Doing nothing also renews your season automatically on November 1.</p>
+    <p class="terms" id="termsline" style="display:none;"></p>
   </div>
 </div>
 <div class="card"><p class="small" style="margin:0;">Questions? Call our office at 250-489-2031 &mdash; Cranbrook &amp; Kimberley, Fernie, Sparwood &amp; Elkford. Need to <a href="../change/?e=PLACEHOLDER" id="changelink">change or cancel</a> instead?</p></div>
@@ -130,6 +146,9 @@
   var API_PAY = 'https://doc-pro-781789de.base44.app/functions/snowRenewCharge';
   var qs = new URLSearchParams(location.search);
   var e = (qs.get('e')||'').trim();
+  var forcedT = (qs.get('t')||'').toLowerCase(); // 'residential' | 'commercial' override
+  var TC_RES = 'https://terms.kootenaylawndoctor.com/terms/residential-snow-terms-and-conditions-2026-27.pdf';
+  var TC_COM = 'https://terms.kootenaylawndoctor.com/terms/commercial-snow-terms-and-conditions-2026-27.pdf';
   var content = document.getElementById('content');
   var formwrap = document.getElementById('formwrap');
   var errEl = document.getElementById('err');
@@ -186,6 +205,7 @@
     // second lookup: payment details (total, installments, monthly, card-on-file, chargeable)
     return loadJson(API_PAY, {e:e, mode:'lookup'}).then(function(p){
       if(!p.error){ window.acct.total = p.total; window.acct.installments = p.installments; window.acct.monthly = p.monthly;
+        window.acct.subtotal = p.subtotal; window.acct.tax = p.tax; window.acct.items = (p.items||[]);
         window.acct.chargeable = !!p.chargeable;
         if(p.cardLast4){ window.acct.cardLast4 = p.cardLast4; window.acct.cardExp = p.cardExp; window.acct.hasCard = true; }
         if(p.cardBrand) window.acct.cardBrand = p.cardBrand;
@@ -193,11 +213,58 @@
     }).catch(function(){ /* payment lookup optional — page still works without it */ });
   }).then(function(){
     var a = window.acct || {};
-    if(a.installments && a.installments > 1 && a.monthly){
-      document.getElementById('instopt').innerHTML = a.installments + ' equal monthly installments of <b>' + money(a.monthly) + '</b> &mdash; billed to your card on file automatically on the 1st of each month. No invoices to chase, nothing to remember.';
+    // ── version: residential vs commercial (auto from estimate doc; ?t= overrides) ──
+    var isRes = forcedT === 'commercial' ? false : (forcedT === 'residential' ? true : (a.residential !== false));
+    a.residential = isRes; window.acct = a;
+
+    // headline / section / label copy
+    document.getElementById('maintitle').textContent = isRes ? 'Confirm Your Snow Season' : 'Accept Your Snow Season Proposal';
+    document.getElementById('payhead').textContent = isRes ? 'How would you like to pay for your season?' : 'How would you like to handle your billing?';
+    document.getElementById('inst-head').textContent = isRes ? 'Monthly installments ' : 'Monthly invoicing ';
+    document.getElementById('inst-dash').textContent = isRes ? '\u2014 billed to my card on file' : '\u2014 no card required';
+    document.getElementById('submitbtn').innerHTML = isRes ? 'Confirm My Renewal &nbsp;&rarr;' : 'Accept My Proposal &nbsp;&rarr;';
+    if(isRes){
+      document.getElementById('footnote').innerHTML = 'Your renewal is confirmed the moment you send &mdash; we&rsquo;ll email you to confirm the setup. Prefer to think about it? Doing nothing also renews your season automatically on November 1.';
+      document.getElementById('termsline').innerHTML = 'By confirming your renewal, you agree to our <a href="' + TC_RES + '" target="_blank" rel="noopener">Residential Snow Terms &amp; Conditions</a>.';
+    } else {
+      document.getElementById('footnote').innerHTML = 'Your acceptance confirms your season with us &mdash; we&rsquo;ll email a confirmation with your service details. This proposal requires your acceptance; services are not automatically renewed.';
+      document.getElementById('termsline').innerHTML = 'By accepting this proposal, you agree to our <a href="' + TC_COM + '" target="_blank" rel="noopener">Commercial Snow Terms &amp; Conditions</a>.';
     }
+    document.getElementById('termsline').style.display = 'block';
+
+    if(isRes){
+      document.getElementById('instopt').innerHTML = (a.installments && a.installments > 1 && a.monthly)
+        ? a.installments + ' equal monthly installments of <b>' + money(a.monthly) + '</b> &mdash; billed to your card on file automatically on the 1st of each month. No invoices to chase, nothing to remember.'
+        : 'Your renewal is confirmed right away. Your card is billed automatically on the 1st of each month &mdash; no invoices to chase, nothing to remember.';
+    } else {
+      document.getElementById('instopt').innerHTML = (a.installments && a.installments > 1 && a.monthly)
+        ? 'We&rsquo;ll invoice you ' + a.installments + ' equal monthly payments of <b>' + money(a.monthly) + '</b>, starting November 1. Pay by EFT, e-transfer, or cheque &mdash; no card needed to accept.'
+        : 'We&rsquo;ll invoice you monthly through the season, starting November 1. Pay by EFT, e-transfer, or cheque &mdash; no card needed to accept.';
+    }
+
+    // ── services included (top of page) ──
+    var svc = document.getElementById('services');
+    if(a.items && a.items.length){
+      var rows = '';
+      a.items.forEach(function(it){
+        rows += '<div class="s-r"><div class="s-l">'
+          + '<div class="s-n">' + esc(it.name || 'Service') + '</div>'
+          + (it.desc ? '<div class="s-d">' + esc(it.desc) + '</div>' : '')
+          + '</div><div class="s-r2"><b>' + money(it.total) + '</b>'
+          + '<span class="s-m">' + (it.qty ? money(it.rate) + ' &times; ' + it.qty + (it.qty > 1 ? ' visits' : ' visit') : money(it.rate)) + '</span>'
+          + '</div></div>';
+      });
+      var sum = '<div class="s-sum">'
+        + '<div class="row"><span>Season subtotal</span><span>' + money(a.subtotal || a.total) + '</span></div>'
+        + (a.tax ? '<div class="row"><span>GST</span><span>' + money(a.tax) + '</span></div>' : '')
+        + '<div class="row grand"><span>Total season cost</span><span>' + money(a.total) + '</span></div>'
+        + '</div>';
+      svc.innerHTML = '<div class="s-t">What&rsquo;s included in your season</div>' + rows + sum;
+      svc.style.display = 'block';
+    }
+
     var who = document.getElementById('who');
-    who.innerHTML = '<p class="lbl">Confirming your renewal for</p>'
+    who.innerHTML = '<p class="lbl">' + (isRes ? 'Confirming your renewal for' : 'Accepting your proposal for') + '</p>'
       + '<div class="row">'
       + '<div class="f"><p class="k">Name</p><p class="v">' + esc([a.first,a.last].filter(Boolean).join(' ')) + '</p></div>'
       + '<div class="f"><p class="k">Phone</p><p class="v">' + esc(a.phone || '—') + '</p></div>'
@@ -285,6 +352,21 @@
         startPoll();
         updateSubmitState(true);
       }
+    } else if(sel === 'installments' && !a.residential) {
+      // COMMERCIAL: monthly invoicing — no card required; card = optional auto-billing
+      rci.classList.remove('warn'); stopPoll();
+      if(a.hasCard){
+        box.innerHTML = cardOnFileHtml(a, true)
+          + (a.installments && a.monthly && a.installments > 1 ? '<div class="reassure-line">&#10003; You&rsquo;re set up for automatic monthly billing to this card &mdash; ' + a.installments + ' payments of ' + money(a.monthly) + ' starting November 1. Prefer invoices instead? Just note it below.</div>' : '<div class="reassure-line">&#10003; You&rsquo;re set up for automatic monthly billing to this card starting November 1. Prefer invoices instead? Just note it below.</div>');
+      } else {
+        box.innerHTML = '<div class="cardbox">'
+          + '<p class="cb-t">Invoices &mdash; or automatic card billing? Your choice.</p>'
+          + '<p>Your default is <b>monthly invoices</b> (pay by EFT, e-transfer, or cheque). If you&rsquo;d rather we bill a card automatically each month, add one here &mdash; completely optional:</p>'
+          + '<a class="btn-inline" href="https://card.kootenaylawndoctor.com/?e=' + encodeURIComponent(a.email || '') + '" target="_blank" rel="noopener">Add a Card for Auto-Billing &rarr;</a>'
+          + '<p class="small" style="margin-top:10px;margin-bottom:0;">No card is needed to accept your proposal &mdash; invoice terms are perfectly fine.</p>'
+          + '</div>';
+      }
+      updateSubmitState(false);
     } else if(sel === 'prepay') {
       rci.classList.remove('warn'); stopPoll();
       buildPrepayUI(a);
@@ -302,7 +384,7 @@
     var onfile = document.getElementById('prepayonfile');
     var decl = document.getElementById('declinemsg');
     decl.style.display='none';
-    if(a.residential && a.chargeable && a.total){
+    if(a.chargeable && a.total){
       hosted.style.display='none';
       onfile.style.display='block';
       onfile.innerHTML = '<div class="paycard">'
@@ -375,8 +457,16 @@
       return;
     }
     var first = (a.first||'').trim(), last = (a.last||'').trim(), email = (a.email||'').trim();
-    var lines = ['REQUEST: Change payment plan.', 'PREFERRED: Installments with a card on file.',
-                 'RENEWAL CONFIRMED by client via installment plan &mdash; set up monthly card billing. (Confirmed from renewal email.)'];
+    var lines;
+    if(a.residential){
+      lines = ['REQUEST: Change payment plan.', 'PREFERRED: Installments with a card on file.',
+               'RENEWAL CONFIRMED by client via installment plan &mdash; set up monthly card billing. (Confirmed from renewal email.)'];
+    } else {
+      lines = ['REQUEST: Commercial snow proposal ACCEPTED by client.', 'BILLING: Monthly INVOICE terms (EFT / e-transfer / cheque) &mdash; no auto-renew; office to countersign and confirm start date.'];
+      if(a.hasCard && a.cardLast4) lines.push('CARD ON FILE ends ' + a.cardLast4 + ' &mdash; client may prefer automatic monthly billing; office to confirm billing method.');
+      else lines.push('NO CARD ON FILE &mdash; invoicing terms.');
+      if(a.installments && a.monthly && a.installments > 1) lines.push('PLAN: ' + a.installments + ' invoices of $' + Number(a.monthly).toFixed(2) + ' starting Nov 1, 2026.');
+    }
     if(a.installments && a.monthly){
       lines.push('MONTHLY PLAN: ' + a.installments + ' installments of $' + Number(a.monthly).toFixed(2) + ', billed on the 1st of each month starting November 1, 2026.');
     }
@@ -398,11 +488,21 @@
       .then(function(j){
         if(j.ok){
           formwrap.style.display='none'; content.style.display='block';
-          var cardMsg = a.hasCard && a.cardLast4
-            ? 'Your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + ' will be billed in equal monthly installments starting November 1.'
-            : 'We&rsquo;ll set up your monthly installments as soon as your card is on file — use the Add Card button from this page or the link we send you.';
-          content.innerHTML = '<h1>You&rsquo;re All Set &mdash; Renewal Confirmed</h1><p><span class="ok">&#10003;</span></p>'
-            + '<p style="font-size:17px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>'
+          var cardMsg, headMsg;
+          if(a.residential){
+            headMsg = '<h1>You&rsquo;re All Set &mdash; Renewal Confirmed</h1><p><span class="ok">&#10003;</span></p>'
+              + '<p style="font-size:17px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
+            cardMsg = a.hasCard && a.cardLast4
+              ? 'Your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + ' will be billed in equal monthly installments starting November 1.'
+              : 'We&rsquo;ll set up your monthly installments as soon as your card is on file — use the Add Card button from this page or the link we send you.';
+          } else {
+            headMsg = '<h1>Proposal Accepted &mdash; You&rsquo;re All Set</h1><p><span class="ok">&#10003;</span></p>'
+              + '<p style="font-size:17px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
+            cardMsg = a.hasCard && a.cardLast4
+              ? 'We&rsquo;ll bill your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + ' in equal monthly payments starting November 1 &mdash; or invoice terms if you prefer; our office will confirm with you.'
+              : 'We&rsquo;ll invoice you monthly through the season, starting November 1 &mdash; payable by EFT, e-transfer, or cheque. Our office will follow up with the details.';
+          }
+          content.innerHTML = headMsg
             + '<p>' + cardMsg + '</p>'
             + '<p class="small">A confirmation is on its way to your email. You can close this page. Need something sooner? Call us at 250-489-2031.</p>';
           window.scrollTo(0,0);
