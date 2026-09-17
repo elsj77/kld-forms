@@ -276,7 +276,7 @@
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Sending&hellip;';
     var contactPref = document.querySelector('input[name=contactpref]:checked').value;
     fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
-      e:e, mode:'submit', choice:choice, details:composeDetails(), contactPref:contactPref,
+      t:e, mode:'submit', choice:choice, details:composeDetails(), contactPref:contactPref,
       first:first, last:last, email:email,
       phone:(a.phone||'').trim(),
       street:(a.street||'').trim(), city:(a.city||'').trim(), postal:(a.postal||'').trim()
