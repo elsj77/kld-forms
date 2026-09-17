@@ -51,6 +51,8 @@
   .cardbox .cb-t{font-size:14.5px;font-weight:700;color:#14532d;margin:0 0 4px;}
   .cardbox p{margin:0 0 10px;font-size:13.5px;color:#3d5a47;}
   .cardline{margin-top:10px;font-size:13.5px;color:#3d5a47;background:#f0faf3;border:1px solid #bcd9c6;border-radius:10px;padding:12px 14px;font-weight:600;}
+  .cardline-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
+  .cardline-row .cardline{margin-top:0;flex:1;min-width:0;}
   .cardline .dots{letter-spacing:2px;}
   .cardline .chg{font-weight:400;font-size:12.5px;}
   .reassure-line{margin-top:10px;font-size:13.5px;color:#3d5a47;background:#f0faf3;border:1px solid #bcd9c6;border-radius:10px;padding:12px 14px;font-weight:600;}
@@ -79,7 +81,7 @@
   .radio-card.warn{border:2px solid #ef4444;background:#fef2f2;padding:12px 13px;}
   .radio-card.warn:hover{border-color:#dc2626;}
   .req-tag{display:inline-block;background:#dc2626;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.05em;border-radius:5px;padding:2px 7px;margin-left:6px;vertical-align:2px;text-transform:uppercase;}
-  .chgbtn{display:inline-block;margin-top:8px;background:#fff;border:1.5px solid #16a34a;color:#15803d;font-weight:700;font-size:13px;border-radius:8px;padding:8px 16px;text-decoration:none;cursor:pointer;}
+  .chgbtn{display:inline-block;margin-top:0;background:#fff;border:1.5px solid #16a34a;color:#15803d;font-weight:700;font-size:13px;border-radius:8px;padding:8px 16px;text-decoration:none;cursor:pointer;white-space:nowrap;}
   .chgbtn:hover{background:#f0faf3;}
   .cardbox.need{border-color:#f3c8c8;background:#fff7f7;}
   .cardbox.need .cb-t{color:#b91c1c;}
@@ -133,6 +135,7 @@
     <textarea id="note" maxlength="900" placeholder="Optional &mdash; e.g. a note about your driveway, gate code, or billing contact&hellip;"></textarea>
 
     <div class="err" id="err"></div>
+    <div id="payconfirm" style="display:none;"></div>
     <button class="btn" id="submitbtn">Confirm My Renewal &nbsp;&rarr;</button>
     <p class="small" id="footnote" style="margin-top:14px;">Your renewal is confirmed the moment you send &mdash; we&rsquo;ll email you to confirm the setup. Prefer to think about it? Doing nothing also renews your season automatically on November 1.</p>
     <p class="terms" id="termsline" style="display:none;"></p>
@@ -223,11 +226,14 @@
     document.getElementById('inst-head').textContent = isRes ? 'Monthly installments ' : 'Monthly invoicing ';
     document.getElementById('inst-dash').textContent = isRes ? '\u2014 billed to my card on file' : '\u2014 no card required';
     document.getElementById('submitbtn').innerHTML = isRes ? 'Confirm My Renewal &nbsp;&rarr;' : 'Accept My Proposal &nbsp;&rarr;';
+    window.footDefault = null;
     if(isRes){
       document.getElementById('footnote').innerHTML = 'Your renewal is confirmed the moment you send &mdash; we&rsquo;ll email you to confirm the setup. Prefer to think about it? Doing nothing also renews your season automatically on November 1.';
+      window.footDefault = document.getElementById('footnote').innerHTML;
       document.getElementById('termsline').innerHTML = 'By confirming your renewal, you agree to our <a href="' + TC_RES + '" target="_blank" rel="noopener">Residential Snow Terms &amp; Conditions</a>.';
     } else {
       document.getElementById('footnote').innerHTML = 'Your acceptance confirms your season with us &mdash; we&rsquo;ll email a confirmation with your service details. This proposal requires your acceptance; services are not automatically renewed.';
+      window.footDefault = document.getElementById('footnote').innerHTML;
       document.getElementById('termsline').innerHTML = 'By accepting this proposal, you agree to our <a href="' + TC_COM + '" target="_blank" rel="noopener">Commercial Snow Terms &amp; Conditions</a>.';
     }
     document.getElementById('termsline').style.display = 'block';
@@ -293,7 +299,7 @@
     var brand = a.cardBrand ? esc(a.cardBrand) + ' ' : '';
     var h = '<div class="cardline">Card on file: ' + brand + '<span class="dots">&bull;&bull;&bull;&bull;</span> ' + esc(a.cardLast4 || '') + (a.cardExp ? ' &middot; expires ' + esc(a.cardExp) : '') + '</div>';
     if(withChangeLink){
-      h += '<a class="chgbtn" href="https://card.kootenaylawndoctor.com/?t=' + encodeURIComponent(e) + '" target="_blank" rel="noopener">Use a different card</a>';
+      h = '<div class="cardline-row">' + h + '<a class="chgbtn" href="https://card.kootenaylawndoctor.com/?t=' + encodeURIComponent(e) + '" target="_blank" rel="noopener">Use a different card</a></div>';
     }
     return h;
   }
@@ -314,8 +320,72 @@
   }
   function updateSubmitState(blocked){
     var btn = document.getElementById('submitbtn');
+    btn.dataset.paymode = '';
+    var pc = document.getElementById('payconfirm');
+    if(pc) pc.style.display = 'none';
+    if(window.footDefault !== undefined){ document.getElementById('footnote').innerHTML = window.footDefault; }
     if(blocked){ btn.disabled = true; btn.innerHTML = 'Add a Card Above to Confirm'; }
-    else if(btn.disabled && btn.dataset.busy !== '1'){ btn.disabled = false; btn.innerHTML = 'Confirm My Renewal &nbsp;&rarr;'; }
+    else if(btn.disabled && btn.dataset.busy !== '1'){
+      btn.disabled = false;
+      btn.innerHTML = ((window.acct||{}).residential === false) ? 'Accept My Proposal &nbsp;&rarr;' : 'Confirm My Renewal &nbsp;&rarr;';
+    }
+  }
+
+  // ── prepay mode: bottom button becomes the pay button (payment required to confirm) ──
+  function setPayMode(a){
+    var btn = document.getElementById('submitbtn');
+    var pc = document.getElementById('payconfirm');
+    if(pc) pc.style.display = 'none';
+    btn.dataset.paymode = (a.chargeable && a.total) ? 'charge' : 'hosted';
+    btn.disabled = false;
+    if(btn.dataset.paymode === 'charge'){
+      btn.innerHTML = 'Pay ' + money(a.total) + ' Now &mdash; Charge Card &bull;&bull;&bull;&bull; ' + esc(a.cardLast4 || '') + ' &rarr;';
+    } else {
+      btn.innerHTML = 'Pay ' + (a.total ? money(a.total) + ' ' : '') + 'Now &mdash; Secure Payment Page &rarr;';
+    }
+    if(window.footDefault !== undefined && a.residential !== false){
+      document.getElementById('footnote').innerHTML = 'Your renewal is confirmed the moment your payment goes through &mdash; we&rsquo;ll email your receipt. Prefer monthly installments instead? Just pick that option above.';
+    }
+  }
+
+  function showChargeConfirm(){
+    var a = window.acct || {};
+    var pc = document.getElementById('payconfirm');
+    pc.innerHTML = '<div class="confirmbox" style="display:block;">'
+      + '<p class="c-t">Confirm your payment</p>'
+      + '<p>You\'re about to charge <b>' + money(a.total) + '</b> to your ' + (a.cardBrand ? esc(a.cardBrand) + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + '. This pays your 2026&ndash;27 snow season in full and confirms your renewal.</p>'
+      + '<div class="c-btns"><button type="button" class="btn-danger" id="confirmyes">Yes, charge my card</button>'
+      + '<button type="button" class="btn-ghost" id="confirmno">Go back</button></div>'
+      + '<div class="declinemsg" id="chargedecline" style="margin-top:12px;"></div>'
+      + '</div>';
+    pc.style.display = 'block';
+    pc.scrollIntoView({behavior:'smooth', block:'center'});
+    document.getElementById('confirmno').addEventListener('click', function(){ pc.style.display = 'none'; });
+    document.getElementById('confirmyes').addEventListener('click', function(){
+      var yes = this;
+      var dm = document.getElementById('chargedecline');
+      yes.disabled = true; yes.innerHTML = '<span class="spinner"></span>Charging your card&hellip;';
+      dm.style.display = 'none'; dm.textContent = '';
+      loadJson(API_PAY, {t:e, mode:'charge', confirm:true}).then(function(j){
+        if(j.ok){
+          formwrap.style.display='none'; content.style.display='block';
+          content.innerHTML = '<h1>Paid &mdash; Season Covered</h1><p><span class="ok">&#10003;</span></p>'
+            + '<p style="font-size:17px;">Thanks, ' + esc((window.acct.first||'')) + '. We charged <b>' + money(j.amount) + '</b> to your card ending in ' + esc(j.last4 || (window.acct.cardLast4||'')) + '.</p>'
+            + '<p>Your 2026&ndash;27 snow season is paid in full and your renewal is confirmed. Our office has been notified, your account is updated, and a receipt is on its way to your email.</p>'
+            + '<p class="small">You can close this page. Questions? Call us at 250-489-2031.</p>';
+          window.scrollTo(0,0);
+        } else {
+          yes.disabled = false; yes.innerHTML = 'Yes, charge my card';
+          dm.textContent = j.declined ? j.friendly : 'We couldn\'t process the charge just now — please try again, or use the secure payment page.';
+          dm.style.display = 'block';
+        }
+      }).catch(function(){
+        yes.disabled = false; yes.innerHTML = 'Yes, charge my card';
+        var dm = document.getElementById('chargedecline');
+        dm.textContent = 'Connection problem — please try again in a few minutes, or call our office at 250-489-2031.';
+        dm.style.display = 'block';
+      });
+    });
   }
 
   function updateCardPrompt(){
@@ -334,7 +404,7 @@
         rci.classList.remove('warn'); stopPoll();
         box.innerHTML = cardOnFileHtml(a, true) + sched
           + '<div class="reassure-line">&#10003; You&rsquo;re all set &mdash; we&rsquo;ll run your installments on this card, starting November 1.</div>'
-          + '<p class="small" style="margin-top:8px;">Changed your card? It takes about 2 minutes &mdash; then <button type="button" class="link-quiet" onclick="location.reload()">refresh this page</button> to see it here.</p>';
+          + '<p class="small" style="margin-top:8px;">After adding a new card, <button type="button" class="link-quiet" onclick="location.reload()">refresh this page</button> to see it here.</p>';
         updateSubmitState(false);
       } else {
         rci.classList.add('warn');
@@ -371,7 +441,7 @@
       rci.classList.remove('warn'); stopPoll();
       buildPrepayUI(a);
       box.innerHTML = '';
-      updateSubmitState(false);
+      setPayMode(a);
     } else {
       rci.classList.remove('warn'); stopPoll();
       box.innerHTML = '';
@@ -389,53 +459,8 @@
       onfile.style.display='block';
       onfile.innerHTML = '<div class="paycard">'
         + cardOnFileHtml(a, true)
-        + '<p>Charge the full season to your card on file right now:</p>'
-        + '<button type="button" class="btn-danger" id="chargebtn">Pay ' + money(a.total) + ' Now &mdash; Charge Card &bull;&bull;&bull;&bull; ' + esc(a.cardLast4 || '') + ' &rarr;</button>'
-        + '</div>'
-        + '<div class="confirmbox" id="confirmbox">'
-        + '<p class="c-t">Confirm your payment</p>'
-        + '<p>You\'re about to charge <b>' + money(a.total) + '</b> to your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + '. This pays your 2026&ndash;27 snow season in full.</p>'
-        + '<div class="c-btns"><button type="button" class="btn-danger" id="confirmyes">Yes, charge my card</button>'
-        + '<button type="button" class="btn-ghost" id="confirmno">Go back</button></div>'
+        + '<p style="margin-bottom:0;">Press <b>Pay ' + money(a.total) + ' Now</b> at the bottom of this page to charge this card for the full season &mdash; that payment confirms your renewal.</p>'
         + '</div>';
-      document.getElementById('chargebtn').addEventListener('click', function(){
-        document.getElementById('confirmbox').style.display='block';
-        this.style.display='none';
-        document.getElementById('confirmbox').scrollIntoView({behavior:'smooth',block:'center'});
-      });
-      document.getElementById('confirmno').addEventListener('click', function(){
-        document.getElementById('confirmbox').style.display='none';
-        document.getElementById('chargebtn').style.display='inline-block';
-      });
-      document.getElementById('confirmyes').addEventListener('click', function(){
-        var yes = this;
-        yes.disabled = true; yes.innerHTML = '<span class="spinner"></span>Charging your card&hellip;';
-        loadJson(API_PAY, {t:e, mode:'charge', confirm:true}).then(function(j){
-          if(j.ok){
-            formwrap.style.display='none'; content.style.display='block';
-            content.innerHTML = '<h1>Paid &mdash; Season Covered</h1><p><span class="ok">&#10003;</span></p>'
-              + '<p style="font-size:17px;">Thanks, ' + esc((window.acct.first||'')) + '. We charged <b>' + money(j.amount) + '</b> to your card ending in ' + esc(j.last4 || (window.acct.cardLast4||'')) + '.</p>'
-              + '<p>Your 2026&ndash;27 snow season is paid in full. Our office has been notified, your account is updated, and a receipt is on its way to your email.</p>'
-              + '<p class="small">You can close this page. Questions? Call us at 250-489-2031.</p>';
-            window.scrollTo(0,0);
-          } else {
-            yes.disabled = false; yes.innerHTML = 'Yes, charge my card';
-            var dm = document.getElementById('declinemsg');
-            dm.textContent = j.declined ? j.friendly : 'We couldn\'t process the charge just now — please try again, or use the secure payment page below.';
-            dm.style.display='block';
-            document.getElementById('confirmbox').style.display='none';
-            document.getElementById('chargebtn').style.display='inline-block';
-            dm.scrollIntoView({behavior:'smooth',block:'center'});
-          }
-        }).catch(function(){
-          yes.disabled = false; yes.innerHTML = 'Yes, charge my card';
-          var dm = document.getElementById('declinemsg');
-          dm.textContent = 'Connection problem — please try again in a few minutes, or call our office at 250-489-2031.';
-          dm.style.display='block';
-          document.getElementById('confirmbox').style.display='none';
-          document.getElementById('chargebtn').style.display='inline-block';
-        });
-      });
     } else {
       hosted.style.display='block';
       onfile.style.display='none';
@@ -445,7 +470,19 @@
 
   document.getElementById('submitbtn').addEventListener('click', function(){
     errEl.style.display='none';
-    var btn = this; btn.dataset.busy = '1'; stopPoll();
+    var btn = this;
+    var paymode = btn.dataset.paymode || '';
+    if(paymode){
+      stopPoll();
+      if(paymode === 'charge'){ showChargeConfirm(); }
+      else {
+        var link = document.getElementById('prepaylink');
+        window.open(link.href, '_blank', 'noopener');
+        showErr('Finish your payment in the secure window that just opened. Your renewal is confirmed the moment your payment goes through \u2014 then you can close this page.');
+      }
+      return;
+    }
+    btn.dataset.busy = '1'; stopPoll();
     var sel = (document.querySelector('input[name=payplan]:checked')||{}).value;
     if(sel === 'prepay'){
       showErr('Use the prepay options above to pay in one payment.');
