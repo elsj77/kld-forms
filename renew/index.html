@@ -138,15 +138,15 @@
     <p class="terms" id="termsline" style="display:none;"></p>
   </div>
 </div>
-<div class="card"><p class="small" style="margin:0;">Questions? Call our office at 250-489-2031 &mdash; Cranbrook &amp; Kimberley, Fernie, Sparwood &amp; Elkford. Need to <a href="../change/?e=PLACEHOLDER" id="changelink">change or cancel</a> instead?</p></div>
+<div class="card"><p class="small" style="margin:0;">Questions? Call our office at 250-489-2031 &mdash; Cranbrook &amp; Kimberley, Fernie, Sparwood &amp; Elkford. Need to <a href="../change/?t=PLACEHOLDER" id="changelink">change or cancel</a> instead?</p></div>
 </div>
 <script>
 (function(){
   var API = 'https://doc-pro-781789de.base44.app/functions/snowChangeRequest';
   var API_PAY = 'https://doc-pro-781789de.base44.app/functions/snowRenewCharge';
   var qs = new URLSearchParams(location.search);
-  var e = (qs.get('e')||'').trim();
-  var forcedT = (qs.get('t')||'').toLowerCase(); // 'residential' | 'commercial' override
+  var e = (qs.get('t')||'').trim(); // secure per-client portal token (Sept 17 2026)
+  var forcedT = (qs.get('type')||'').toLowerCase(); // 'residential' | 'commercial' override (renamed from t, Sept 17 2026)
   var TC_RES = 'https://terms.kootenaylawndoctor.com/terms/residential-snow-terms-and-conditions-2026-27.pdf';
   var TC_COM = 'https://terms.kootenaylawndoctor.com/terms/commercial-snow-terms-and-conditions-2026-27.pdf';
   var content = document.getElementById('content');
@@ -161,11 +161,11 @@
   }
   function showErr(msg){ errEl.textContent = msg; errEl.style.display = 'block'; errEl.scrollIntoView({behavior:'smooth',block:'center'}); }
 
-  if(!e || !/^\d{1,8}$/.test(e)){
+  if(!e || !/^[A-Za-z0-9_-]{20,64}$/.test(e)){
     fail('This link looks incomplete. Please use the &ldquo;Confirm My Renewal&rdquo; button in your renewal email.');
     return;
   }
-  document.getElementById('changelink').href = '../change/?e=' + encodeURIComponent(e);
+  document.getElementById('changelink').href = '../change/?t=' + encodeURIComponent(e);
 
   function loadJson(url, body){
     return fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)})
@@ -199,11 +199,11 @@
     return out;
   }
 
-  loadJson(API, {e:e, mode:'lookup'}).then(function(j){
+  loadJson(API, {t:e, mode:'lookup'}).then(function(j){
     if(j.error){ fail(j.error==='not_found' ? 'We couldn\'t find your renewal quote. Please use the exact link from your renewal email, or call our office.' : 'We couldn\'t load your details right now. Please try again in a few minutes, or call our office at 250-489-2031.'); return; }
     window.acct = j;
     // second lookup: payment details (total, installments, monthly, card-on-file, chargeable)
-    return loadJson(API_PAY, {e:e, mode:'lookup'}).then(function(p){
+    return loadJson(API_PAY, {t:e, mode:'lookup'}).then(function(p){
       if(!p.error){ window.acct.total = p.total; window.acct.installments = p.installments; window.acct.monthly = p.monthly;
         window.acct.subtotal = p.subtotal; window.acct.tax = p.tax; window.acct.items = (p.items||[]);
         window.acct.chargeable = !!p.chargeable;
@@ -271,10 +271,10 @@
       + '<div class="f"><p class="k">Email</p><p class="v">' + esc(a.email || '—') + '</p></div>'
       + '<div class="f"><p class="k">Service address</p><p class="v">' + esc([a.street,a.city,a.postal].filter(Boolean).join(', ')) + '</p></div>'
       + '</div>'
-      + '<div class="chips"><span class="quote">Snow renewal #' + esc(e) + '</span>' + (a.total ? '<span class="total">Season total ' + money(a.total) + '</span>' : '') + '</div>'
+      + '<div class="chips"><span class="quote">Snow renewal #' + esc(a.number || '') + '</span>' + (a.total ? '<span class="total">Season total ' + money(a.total) + '</span>' : '') + '</div>'
       + '<p class="note">These come straight from your account. If anything has changed, just tell us in your note below and we&rsquo;ll update it when we confirm.</p>';
     who.style.display='block';
-    document.getElementById('prepaylink').href = 'https://card.kootenaylawndoctor.com/pay/?e=' + encodeURIComponent(e);
+    document.getElementById('prepaylink').href = 'https://card.kootenaylawndoctor.com/pay/?t=' + encodeURIComponent(e);
     content.style.display='none';
     formwrap.style.display='block';
     updateCardPrompt();
@@ -293,7 +293,7 @@
     var brand = a.cardBrand ? esc(a.cardBrand) + ' ' : '';
     var h = '<div class="cardline">Card on file: ' + brand + '<span class="dots">&bull;&bull;&bull;&bull;</span> ' + esc(a.cardLast4 || '') + (a.cardExp ? ' &middot; expires ' + esc(a.cardExp) : '') + '</div>';
     if(withChangeLink){
-      h += '<a class="chgbtn" href="https://card.kootenaylawndoctor.com/?e=' + encodeURIComponent(a.email || '') + '" target="_blank" rel="noopener">Use a different card</a>';
+      h += '<a class="chgbtn" href="https://card.kootenaylawndoctor.com/?t=' + encodeURIComponent(e) + '" target="_blank" rel="noopener">Use a different card</a>';
     }
     return h;
   }
@@ -303,7 +303,7 @@
   function stopPoll(){ if(pollTimer){ clearInterval(pollTimer); pollTimer = null; } }
   function startPoll(){ if(pollTimer) return; pollTimer = setInterval(function(){ checkCardNow(); }, 10000); }
   function checkCardNow(cb){
-    loadJson(API_PAY, {e:e, mode:'lookup'}).then(function(p){
+    loadJson(API_PAY, {t:e, mode:'lookup'}).then(function(p){
       if(p && !p.error && p.cardLast4){
         window.acct.hasCard = true; window.acct.chargeable = !!p.chargeable;
         window.acct.cardLast4 = p.cardLast4; window.acct.cardExp = p.cardExp; window.acct.cardBrand = p.cardBrand;
@@ -341,7 +341,7 @@
         box.innerHTML = '<div class="cardbox need">'
           + '<p class="cb-t">A card saved on file is required for monthly installments</p>'
           + '<p>Your card is billed automatically on the 1st of each month &mdash; we can&rsquo;t set that up until a card is on file. Add one now (bank-grade secure, about 2 minutes):</p>'
-          + '<a class="btn-inline" href="https://card.kootenaylawndoctor.com/?e=' + encodeURIComponent(a.email || '') + '" target="_blank" rel="noopener">Add / Update Card &rarr;</a>'
+          + '<a class="btn-inline" href="https://card.kootenaylawndoctor.com/?t=' + encodeURIComponent(e) + '" target="_blank" rel="noopener">Add / Update Card &rarr;</a>'
           + '<div style="margin-top:10px;"><button type="button" class="link-quiet" id="checkcardbtn">I&rsquo;ve added my card &mdash; check again</button></div>'
           + '<p style="margin-top:8px;margin-bottom:0;" class="small">We also check automatically every 10 seconds &mdash; the moment your card lands, your renewal unlocks right here.</p>'
           + '</div>';
@@ -362,7 +362,7 @@
         box.innerHTML = '<div class="cardbox">'
           + '<p class="cb-t">Invoices &mdash; or automatic card billing? Your choice.</p>'
           + '<p>Your default is <b>monthly invoices</b> (pay by EFT, e-transfer, or cheque). If you&rsquo;d rather we bill a card automatically each month, add one here &mdash; completely optional:</p>'
-          + '<a class="btn-inline" href="https://card.kootenaylawndoctor.com/?e=' + encodeURIComponent(a.email || '') + '" target="_blank" rel="noopener">Add a Card for Auto-Billing &rarr;</a>'
+          + '<a class="btn-inline" href="https://card.kootenaylawndoctor.com/?t=' + encodeURIComponent(e) + '" target="_blank" rel="noopener">Add a Card for Auto-Billing &rarr;</a>'
           + '<p class="small" style="margin-top:10px;margin-bottom:0;">No card is needed to accept your proposal &mdash; invoice terms are perfectly fine.</p>'
           + '</div>';
       }
@@ -410,7 +410,7 @@
       document.getElementById('confirmyes').addEventListener('click', function(){
         var yes = this;
         yes.disabled = true; yes.innerHTML = '<span class="spinner"></span>Charging your card&hellip;';
-        loadJson(API_PAY, {e:e, mode:'charge', confirm:true}).then(function(j){
+        loadJson(API_PAY, {t:e, mode:'charge', confirm:true}).then(function(j){
           if(j.ok){
             formwrap.style.display='none'; content.style.display='block';
             content.innerHTML = '<h1>Paid &mdash; Season Covered</h1><p><span class="ok">&#10003;</span></p>'
