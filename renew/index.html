@@ -516,7 +516,7 @@
 
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Confirming&hellip;';
     fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
-      e:e, mode:'submit', choice:'1', details:details, contactPref:'1',
+      t:e, mode:'submit', choice:'1', details:details, contactPref:'1',
       first:first, last:last, email:email,
       phone:(a.phone||'').trim(),
       street:(a.street||'').trim(), city:(a.city||'').trim(), postal:(a.postal||'').trim()
