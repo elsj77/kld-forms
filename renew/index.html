@@ -246,13 +246,15 @@
     }
     return rows;
   }
-  function schedHtml(n, monthly, total){
+  function schedHtml(n, monthly, total, isCom){
     var rows = schedRows(n, monthly, total);
-    var out = '<div class="sched"><div class="s-t">Your payment schedule</div>';
+    var out = '<div class="sched"><div class="s-t">' + (isCom ? 'Your invoice schedule' : 'Your payment schedule') + '</div>';
     rows.forEach(function(r){
       out += '<div class="s-r' + (r.isLast ? ' last' : '') + '"><span>' + esc(r.label) + '</span><span class="amt">' + money(r.amt) + (r.isLast ? ' (final payment)' : '') + '</span></div>';
     });
-    if(n === 1) out += '<div class="s-note">Single payment plan.</div>';
+    if(isCom) out += (n === 1) ? '<div class="s-note">Single invoice &mdash; payable by EFT, e-transfer, or cheque.</div>'
+      : '<div class="s-note">Invoices are emailed monthly, payable by EFT, e-transfer, or cheque.</div>';
+    else if(n === 1) out += '<div class="s-note">Single payment plan.</div>';
     else out += '<div class="s-note">Charged automatically to your card on file on ' + billDay() + ' of each month.</div>';
     out += '</div>';
     return out;
@@ -288,7 +290,7 @@
       window.footDefault = document.getElementById('footnote').innerHTML;
       document.getElementById('termsline').innerHTML = 'By confirming your renewal, you agree to our <a href="' + TC_RES + '" target="_blank" rel="noopener">Residential Snow Terms &amp; Conditions</a>.';
     } else {
-      document.getElementById('footnote').innerHTML = 'Your acceptance confirms your season with us &mdash; we&rsquo;ll email a confirmation with your service details. This proposal requires your acceptance; services are not automatically renewed.';
+      document.getElementById('footnote').innerHTML = 'Your acceptance confirms your season with us &mdash; we&rsquo;ll email a confirmation with your service details. This proposal requires your acceptance; services are not automatically renewed.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
       window.footDefault = document.getElementById('footnote').innerHTML;
       document.getElementById('termsline').innerHTML = 'By accepting this proposal, you agree to our <a href="' + TC_COM + '" target="_blank" rel="noopener">Commercial Snow Terms &amp; Conditions</a>.';
     }
@@ -330,7 +332,7 @@
     who.innerHTML = '<p class="lbl">' + (isRes ? 'Confirming your renewal for' : 'Accepting your proposal for') + '</p>'
       + '<div class="acct-row1">'
       + '<span class="acct-name">' + esc([a.first,a.last].filter(Boolean).join(' ')) + '</span>'
-      + '<span class="quote">Snow renewal #' + esc(a.number || '') + '</span>'
+      + '<span class="quote">' + (isRes ? 'Snow renewal #' : 'Snow proposal #') + esc(a.number || '') + '</span>'
       + (a.total ? '<span class="total">Season total ' + money(a.total) + '</span>' : '')
       + '</div>'
       + '<div class="acct-row2">'
@@ -415,6 +417,8 @@
     }
     if(window.footDefault !== undefined && a.residential !== false){
       document.getElementById('footnote').innerHTML = 'Your renewal is confirmed the moment your payment goes through &mdash; we&rsquo;ll email your receipt. Prefer monthly installments instead? Just pick that option above.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
+    } else if(window.footDefault !== undefined){
+      document.getElementById('footnote').innerHTML = 'Your proposal is accepted the moment your payment goes through &mdash; we&rsquo;ll email your receipt and confirmation. Prefer monthly invoicing instead? Just pick that option above.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
     }
   }
 
@@ -489,6 +493,10 @@
         payNote = (a.installments === 1)
           ? '<p class="small" style="margin-top:8px;margin-bottom:0;">Your season payment of ' + money(a.total) + ' will be billed to this card once you click the <b>Confirm My Renewal</b> button.</p>'
           : '<p class="small" style="margin-top:8px;margin-bottom:0;">Your monthly installments of ' + money(a.monthly) + ' will be billed to this card on ' + billDay() + ' of each month once you click the <b>Confirm My Renewal</b> button.</p>';
+      } else if(sel === 'installments' && a.residential === false && a.monthly){
+        payNote = (a.installments === 1)
+          ? '<p class="small" style="margin-top:8px;margin-bottom:0;">Your season payment of ' + money(a.total) + ' will be billed to this card once you click the <b>Accept My Proposal</b> button &mdash; or invoice terms if you prefer.</p>'
+          : '<p class="small" style="margin-top:8px;margin-bottom:0;">Your monthly payments of ' + money(a.monthly) + ' will be billed automatically to this card starting ' + startLong() + ' once you click the <b>Accept My Proposal</b> button &mdash; or invoice terms if you prefer.</p>';
       } else if(sel === 'prepay' && a.total){
         payNote = '<p class="small" style="margin-top:8px;margin-bottom:0;">Your prepayment of ' + money(a.total) + ' will be charged to this card when you click the <b>Pay ' + money(a.total) + ' Now</b> button below.</p>';
       }
@@ -503,7 +511,8 @@
       box.innerHTML = '<p class="cof-t">Optional &mdash; automatic card billing</p>'
         + '<p style="margin-bottom:10px;">Your default is <b>monthly invoices</b> (pay by EFT, e-transfer, or cheque). If you&rsquo;d rather we bill a card automatically each month, add one here:</p>'
         + '<a class="btn-inline" href="' + cardUrl + '" target="_blank" rel="noopener">Add a Card for Auto-Billing &rarr;</a>'
-        + '<p class="small" style="margin-top:10px;margin-bottom:0;">No card is needed to accept your proposal &mdash; invoice terms are perfectly fine.</p>';
+        + '<p class="small" style="margin-top:10px;margin-bottom:0;">No card is needed to accept your proposal &mdash; invoice terms are perfectly fine.</p>'
+        + '<p class="small" style="margin-top:8px;margin-bottom:0;">After adding a new card, <button type="button" class="link-quiet" onclick="location.reload()">refresh this page</button> to see it here.</p>';
     } else {
       box.style.display = 'none';
       box.innerHTML = '';
@@ -536,11 +545,7 @@
     } else if(sel === 'installments' && !a.residential) {
       // COMMERCIAL: monthly invoicing — no card required; card = optional auto-billing
       rci.classList.remove('warn'); stopPoll();
-      if(a.hasCard){
-        box.innerHTML = (a.installments && a.monthly && a.installments > 1 ? '<div class="reassure-line">&#10003; You&rsquo;re set up for automatic monthly billing to your card on file &mdash; ' + a.installments + ' payments of ' + money(a.monthly) + ' starting ' + startLong() + '. Prefer invoices instead? Just note it below.</div>' : '<div class="reassure-line">&#10003; You&rsquo;re set up for automatic monthly billing to your card on file starting ' + startLong() + '. Prefer invoices instead? Just note it below.</div>');
-      } else {
-        box.innerHTML = '';
-      }
+      box.innerHTML = (a.installments && a.monthly && a.total) ? schedHtml(a.installments, a.monthly, a.total, true) : '';
       updateSubmitState(false);
     } else if(sel === 'prepay') {
       rci.classList.remove('warn'); stopPoll();
