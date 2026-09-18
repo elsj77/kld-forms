@@ -137,7 +137,7 @@
     <div class="err" id="err"></div>
     <div id="payconfirm" style="display:none;"></div>
     <button class="btn" id="submitbtn">Confirm My Renewal &nbsp;&rarr;</button>
-    <p class="small" id="footnote" style="margin-top:14px;">Your renewal is confirmed the moment you send &mdash; we&rsquo;ll email you to confirm the setup. Prefer to think about it? Doing nothing also renews your season automatically on November 1.</p>
+    <p class="small" id="footnote" style="margin-top:14px;">Your renewal is confirmed the moment you send &mdash; we&rsquo;ll email you to confirm the setup. Prefer to think about it? Doing nothing also renews your season automatically on your season start date.</p>
     <p class="terms" id="termsline" style="display:none;"></p>
   </div>
 </div>
@@ -151,6 +151,18 @@
   var e = (qs.get('t')||'').trim(); // secure per-client portal token (Sept 17 2026)
   var eq = (qs.get('e')||'').trim(); // estimate number hint (which of this client's quotes this email is about)
   var forcedT = (qs.get('type')||'').toLowerCase(); // 'residential' | 'commercial' override (renamed from t, Sept 17 2026)
+
+  // quote start date (from snowRenewCharge lookup.start) — installment billing day follows it.
+  // Falls back to Nov 1, 2026 when the quote has no valid start date.
+  var S = {y:2026, m:11, d:1};
+  function setStart(p){ if(p && p.start && p.start.y) S = {y:+p.start.y, m:+p.start.m, d:+p.start.d}; }
+  var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var MFULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  function ord(n){ var s=['th','st','nd','rd'], v=n%100; return n + (s[(v-20)%10] || s[v] || s[0]); }
+  function dim(y, m0){ return new Date(y, m0+1, 0).getDate(); } // days in month (m0 = 0-indexed)
+  function startLong(){ return MFULL[S.m-1] + ' ' + S.d + ', ' + S.y; }            // "November 15, 2026"
+  function startShort(){ return MN[S.m-1] + ' ' + S.d + ', ' + S.y; }              // "Nov 15, 2026"
+  function billDay(){ return 'the ' + ord(S.d); }                                   // "the 15th"
   var TC_RES = 'https://terms.kootenaylawndoctor.com/terms/residential-snow-terms-and-conditions-2026-27.pdf';
   var TC_COM = 'https://terms.kootenaylawndoctor.com/terms/commercial-snow-terms-and-conditions-2026-27.pdf';
   var content = document.getElementById('content');
@@ -176,17 +188,17 @@
       .then(function(r){ return r.json(); });
   }
 
-  // payment schedule: N monthly charges on the 1st, starting Nov 1 2026
+  // payment schedule: N monthly charges on the quote's start day, starting at the quote start date
   function schedRows(n, monthly, total){
-    var names=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    var rows=[]; var y=2026; var m=10; // November 2026
+    var rows=[]; var y=S.y; var m=S.m-1; var d=S.d; // quote start (m 0-indexed)
     var last = Math.round((total - monthly*(n-1))*100)/100;
     var lastC = Math.round(last*100), monthlyC = Math.round(monthly*100);
     var adj = lastC !== monthlyC; // integer-cent compare — float drift safe
     for(var i=0;i<n;i++){
       var isLast = (i===n-1);
       var amt = (isLast && adj) ? last : monthly;
-      rows.push({label: names[m]+' 1, '+y, amt: amt, isLast: isLast && adj});
+      var ld = Math.min(d, dim(y, m)); // clamp for short months (e.g. 31 → 28 in Feb)
+      rows.push({label: MN[m]+' '+ld+', '+y, amt: amt, isLast: isLast && adj});
       m++; if(m>11){m=0;y++;}
     }
     return rows;
@@ -198,7 +210,7 @@
       out += '<div class="s-r' + (r.isLast ? ' last' : '') + '"><span>' + esc(r.label) + '</span><span class="amt">' + money(r.amt) + (r.isLast ? ' (final payment)' : '') + '</span></div>';
     });
     if(n === 1) out += '<div class="s-note">Single payment plan.</div>';
-    else out += '<div class="s-note">Charged automatically to your card on file on the 1st of each month.</div>';
+    else out += '<div class="s-note">Charged automatically to your card on file on ' + billDay() + ' of each month.</div>';
     out += '</div>';
     return out;
   }
@@ -208,7 +220,7 @@
     window.acct = j;
     // second lookup: payment details (total, installments, monthly, card-on-file, chargeable)
     return loadJson(API_PAY, {t:e, e:eq, mode:'lookup'}).then(function(p){
-      if(!p.error){ window.acct.total = p.total; window.acct.installments = p.installments; window.acct.monthly = p.monthly;
+      if(!p.error){ setStart(p); window.acct.total = p.total; window.acct.installments = p.installments; window.acct.monthly = p.monthly;
         window.acct.subtotal = p.subtotal; window.acct.tax = p.tax; window.acct.items = (p.items||[]);
         window.acct.chargeable = !!p.chargeable;
         if(p.cardLast4){ window.acct.cardLast4 = p.cardLast4; window.acct.cardExp = p.cardExp; window.acct.hasCard = true; }
@@ -229,7 +241,7 @@
     document.getElementById('submitbtn').innerHTML = isRes ? 'Confirm My Renewal &nbsp;&rarr;' : 'Accept My Proposal &nbsp;&rarr;';
     window.footDefault = null;
     if(isRes){
-      document.getElementById('footnote').innerHTML = 'Your renewal is confirmed the moment you send &mdash; we&rsquo;ll email you to confirm the setup. Prefer to think about it? Doing nothing also renews your season automatically on November 1.';
+      document.getElementById('footnote').innerHTML = 'Your renewal is confirmed the moment you send &mdash; we&rsquo;ll email you to confirm the setup. Prefer to think about it? Doing nothing also renews your season automatically on ' + startLong() + '.';
       window.footDefault = document.getElementById('footnote').innerHTML;
       document.getElementById('termsline').innerHTML = 'By confirming your renewal, you agree to our <a href="' + TC_RES + '" target="_blank" rel="noopener">Residential Snow Terms &amp; Conditions</a>.';
     } else {
@@ -241,12 +253,12 @@
 
     if(isRes){
       document.getElementById('instopt').innerHTML = (a.installments && a.installments > 1 && a.monthly)
-        ? a.installments + ' equal monthly installments of <b>' + money(a.monthly) + '</b> &mdash; billed to your card on file automatically on the 1st of each month. No invoices to chase, nothing to remember.'
-        : 'Your renewal is confirmed right away. Your card is billed automatically on the 1st of each month &mdash; no invoices to chase, nothing to remember.';
+        ? a.installments + ' equal monthly installments of <b>' + money(a.monthly) + '</b> &mdash; billed to your card on file automatically on ' + billDay() + ' of each month. No invoices to chase, nothing to remember.'
+        : 'Your renewal is confirmed right away. Your card is billed automatically on ' + billDay() + ' of each month &mdash; no invoices to chase, nothing to remember.';
     } else {
       document.getElementById('instopt').innerHTML = (a.installments && a.installments > 1 && a.monthly)
-        ? 'We&rsquo;ll invoice you ' + a.installments + ' equal monthly payments of <b>' + money(a.monthly) + '</b>, starting November 1. Pay by EFT, e-transfer, or cheque &mdash; no card needed to accept.'
-        : 'We&rsquo;ll invoice you monthly through the season, starting November 1. Pay by EFT, e-transfer, or cheque &mdash; no card needed to accept.';
+        ? 'We&rsquo;ll invoice you ' + a.installments + ' equal monthly payments of <b>' + money(a.monthly) + '</b>, starting ' + startLong() + '. Pay by EFT, e-transfer, or cheque &mdash; no card needed to accept.'
+        : 'We&rsquo;ll invoice you monthly through the season, starting ' + startLong() + '. Pay by EFT, e-transfer, or cheque &mdash; no card needed to accept.';
     }
 
     // ── services included (top of page) ──
@@ -311,6 +323,7 @@
   function startPoll(){ if(pollTimer) return; pollTimer = setInterval(function(){ checkCardNow(); }, 10000); }
   function checkCardNow(cb){
     loadJson(API_PAY, {t:e, e:eq, mode:'lookup'}).then(function(p){
+      if(!p.error) setStart(p);
       if(p && !p.error && p.cardLast4){
         window.acct.hasCard = true; window.acct.chargeable = !!p.chargeable;
         window.acct.cardLast4 = p.cardLast4; window.acct.cardExp = p.cardExp; window.acct.cardBrand = p.cardBrand;
@@ -404,14 +417,14 @@
       if(a.hasCard){
         rci.classList.remove('warn'); stopPoll();
         box.innerHTML = cardOnFileHtml(a, true) + sched
-          + '<div class="reassure-line">&#10003; You&rsquo;re all set &mdash; we&rsquo;ll run your installments on this card, starting November 1.</div>'
+          + '<div class="reassure-line">&#10003; You&rsquo;re all set &mdash; we&rsquo;ll run your installments on this card, starting ' + startLong() + '.</div>'
           + '<p class="small" style="margin-top:8px;">After adding a new card, <button type="button" class="link-quiet" onclick="location.reload()">refresh this page</button> to see it here.</p>';
         updateSubmitState(false);
       } else {
         rci.classList.add('warn');
         box.innerHTML = '<div class="cardbox need">'
           + '<p class="cb-t">A card saved on file is required for monthly installments</p>'
-          + '<p>Your card is billed automatically on the 1st of each month &mdash; we can&rsquo;t set that up until a card is on file. Add one now (bank-grade secure, about 2 minutes):</p>'
+          + '<p>Your card is billed automatically on ' + billDay() + ' of each month &mdash; we can&rsquo;t set that up until a card is on file. Add one now (bank-grade secure, about 2 minutes):</p>'
           + '<a class="btn-inline" href="https://card.kootenaylawndoctor.com/?t=' + encodeURIComponent(e) + '" target="_blank" rel="noopener">Add / Update Card &rarr;</a>'
           + '<div style="margin-top:10px;"><button type="button" class="link-quiet" id="checkcardbtn">I&rsquo;ve added my card &mdash; check again</button></div>'
           + '<p style="margin-top:8px;margin-bottom:0;" class="small">We also check automatically every 10 seconds &mdash; the moment your card lands, your renewal unlocks right here.</p>'
@@ -428,7 +441,7 @@
       rci.classList.remove('warn'); stopPoll();
       if(a.hasCard){
         box.innerHTML = cardOnFileHtml(a, true)
-          + (a.installments && a.monthly && a.installments > 1 ? '<div class="reassure-line">&#10003; You&rsquo;re set up for automatic monthly billing to this card &mdash; ' + a.installments + ' payments of ' + money(a.monthly) + ' starting November 1. Prefer invoices instead? Just note it below.</div>' : '<div class="reassure-line">&#10003; You&rsquo;re set up for automatic monthly billing to this card starting November 1. Prefer invoices instead? Just note it below.</div>');
+          + (a.installments && a.monthly && a.installments > 1 ? '<div class="reassure-line">&#10003; You&rsquo;re set up for automatic monthly billing to this card &mdash; ' + a.installments + ' payments of ' + money(a.monthly) + ' starting ' + startLong() + '. Prefer invoices instead? Just note it below.</div>' : '<div class="reassure-line">&#10003; You&rsquo;re set up for automatic monthly billing to this card starting ' + startLong() + '. Prefer invoices instead? Just note it below.</div>');
       } else {
         box.innerHTML = '<div class="cardbox">'
           + '<p class="cb-t">Invoices &mdash; or automatic card billing? Your choice.</p>'
@@ -503,10 +516,10 @@
       lines = ['REQUEST: Commercial snow proposal ACCEPTED by client.', 'BILLING: Monthly INVOICE terms (EFT / e-transfer / cheque) &mdash; no auto-renew; office to countersign and confirm start date.'];
       if(a.hasCard && a.cardLast4) lines.push('CARD ON FILE ends ' + a.cardLast4 + ' &mdash; client may prefer automatic monthly billing; office to confirm billing method.');
       else lines.push('NO CARD ON FILE &mdash; invoicing terms.');
-      if(a.installments && a.monthly && a.installments > 1) lines.push('PLAN: ' + a.installments + ' invoices of $' + Number(a.monthly).toFixed(2) + ' starting Nov 1, 2026.');
+      if(a.installments && a.monthly && a.installments > 1) lines.push('PLAN: ' + a.installments + ' invoices of $' + Number(a.monthly).toFixed(2) + ' starting ' + startShort() + '.');
     }
     if(a.installments && a.monthly){
-      lines.push('MONTHLY PLAN: ' + a.installments + ' installments of $' + Number(a.monthly).toFixed(2) + ', billed on the 1st of each month starting November 1, 2026.');
+      lines.push('MONTHLY PLAN: ' + a.installments + ' installments of $' + Number(a.monthly).toFixed(2) + ', billed on ' + billDay() + ' of each month starting ' + startLong() + '.');
     }
     if(a.hasCard && a.cardLast4) lines.push('CARD ON FILE: ends ' + a.cardLast4 + (a.cardExp ? ', exp ' + a.cardExp : '') + '.');
     else lines.push('CLIENT HAS NO CARD ON FILE YET &mdash; card-add link shown on confirm page; office to verify before first billing run.');
@@ -531,14 +544,14 @@
             headMsg = '<h1>You&rsquo;re All Set &mdash; Renewal Confirmed</h1><p><span class="ok">&#10003;</span></p>'
               + '<p style="font-size:17px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
             cardMsg = a.hasCard && a.cardLast4
-              ? 'Your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + ' will be billed in equal monthly installments starting November 1.'
+              ? 'Your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + ' will be billed in equal monthly installments starting ' + startLong() + '.'
               : 'We&rsquo;ll set up your monthly installments as soon as your card is on file — use the Add Card button from this page or the link we send you.';
           } else {
             headMsg = '<h1>Proposal Accepted &mdash; You&rsquo;re All Set</h1><p><span class="ok">&#10003;</span></p>'
               + '<p style="font-size:17px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
             cardMsg = a.hasCard && a.cardLast4
-              ? 'We&rsquo;ll bill your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + ' in equal monthly payments starting November 1 &mdash; or invoice terms if you prefer; our office will confirm with you.'
-              : 'We&rsquo;ll invoice you monthly through the season, starting November 1 &mdash; payable by EFT, e-transfer, or cheque. Our office will follow up with the details.';
+              ? 'We&rsquo;ll bill your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + ' in equal monthly payments starting ' + startLong() + ' &mdash; or invoice terms if you prefer; our office will confirm with you.'
+              : 'We&rsquo;ll invoice you monthly through the season, starting ' + startLong() + ' &mdash; payable by EFT, e-transfer, or cheque. Our office will follow up with the details.';
           }
           content.innerHTML = headMsg
             + '<p>' + cardMsg + '</p>'
