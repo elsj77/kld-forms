@@ -179,7 +179,7 @@
   }
   function showErr(msg){ errEl.textContent = msg; errEl.style.display = 'block'; errEl.scrollIntoView({behavior:'smooth',block:'center'}); }
 
-  if(!e || !/^[A-Za-z0-9_-]{20,64}$/.test(e)){
+  if((!e || !/^[A-Za-z0-9_-]{20,64}$/.test(e)) && !qq){
     fail('This link looks incomplete. Please use the &ldquo;Confirm My Renewal&rdquo; button in your renewal email.');
     return;
   }
