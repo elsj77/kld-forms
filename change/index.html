@@ -149,6 +149,7 @@
   var API = 'https://doc-pro-781789de.base44.app/functions/snowChangeRequest';
   var qs = new URLSearchParams(location.search);
   var e = (qs.get('t')||'').trim(); // secure per-client portal token (Sept 17 2026)
+  var eq = (qs.get('e')||'').trim(); // estimate number hint (which of this client's quotes this email is about)
   var content = document.getElementById('content');
   var formwrap = document.getElementById('formwrap');
   var errEl = document.getElementById('err');
@@ -165,7 +166,7 @@
     return;
   }
 
-  fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({t:e, mode:'lookup'})})
+  fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({t:e, e:eq, mode:'lookup'})})
     .then(function(r){ return r.json(); })
     .then(function(j){
       if(j.error){ fail(j.error==='not_found' ? 'We couldn\'t find your renewal quote. Please use the exact link from your renewal email, or call our office.' : 'We couldn\'t load your details right now. Please try again in a few minutes, or call our office at 250-489-2031.'); return; }
@@ -276,7 +277,7 @@
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Sending&hellip;';
     var contactPref = document.querySelector('input[name=contactpref]:checked').value;
     fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
-      t:e, mode:'submit', choice:choice, details:composeDetails(), contactPref:contactPref,
+      t:e, e:eq, mode:'submit', choice:choice, details:composeDetails(), contactPref:contactPref,
       first:first, last:last, email:email,
       phone:(a.phone||'').trim(),
       street:(a.street||'').trim(), city:(a.city||'').trim(), postal:(a.postal||'').trim()

@@ -149,6 +149,7 @@
   var API_PAY = 'https://doc-pro-781789de.base44.app/functions/snowRenewCharge';
   var qs = new URLSearchParams(location.search);
   var e = (qs.get('t')||'').trim(); // secure per-client portal token (Sept 17 2026)
+  var eq = (qs.get('e')||'').trim(); // estimate number hint (which of this client's quotes this email is about)
   var forcedT = (qs.get('type')||'').toLowerCase(); // 'residential' | 'commercial' override (renamed from t, Sept 17 2026)
   var TC_RES = 'https://terms.kootenaylawndoctor.com/terms/residential-snow-terms-and-conditions-2026-27.pdf';
   var TC_COM = 'https://terms.kootenaylawndoctor.com/terms/commercial-snow-terms-and-conditions-2026-27.pdf';
@@ -168,7 +169,7 @@
     fail('This link looks incomplete. Please use the &ldquo;Confirm My Renewal&rdquo; button in your renewal email.');
     return;
   }
-  document.getElementById('changelink').href = '../change/?t=' + encodeURIComponent(e);
+  document.getElementById('changelink').href = '../change/?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : '');
 
   function loadJson(url, body){
     return fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)})
@@ -202,11 +203,11 @@
     return out;
   }
 
-  loadJson(API, {t:e, mode:'lookup'}).then(function(j){
+  loadJson(API, {t:e, e:eq, mode:'lookup'}).then(function(j){
     if(j.error){ fail(j.error==='not_found' ? 'We couldn\'t find your renewal quote. Please use the exact link from your renewal email, or call our office.' : 'We couldn\'t load your details right now. Please try again in a few minutes, or call our office at 250-489-2031.'); return; }
     window.acct = j;
     // second lookup: payment details (total, installments, monthly, card-on-file, chargeable)
-    return loadJson(API_PAY, {t:e, mode:'lookup'}).then(function(p){
+    return loadJson(API_PAY, {t:e, e:eq, mode:'lookup'}).then(function(p){
       if(!p.error){ window.acct.total = p.total; window.acct.installments = p.installments; window.acct.monthly = p.monthly;
         window.acct.subtotal = p.subtotal; window.acct.tax = p.tax; window.acct.items = (p.items||[]);
         window.acct.chargeable = !!p.chargeable;
@@ -280,7 +281,7 @@
       + '<div class="chips"><span class="quote">Snow renewal #' + esc(a.number || '') + '</span>' + (a.total ? '<span class="total">Season total ' + money(a.total) + '</span>' : '') + '</div>'
       + '<p class="note">These come straight from your account. If anything has changed, just tell us in your note below and we&rsquo;ll update it when we confirm.</p>';
     who.style.display='block';
-    document.getElementById('prepaylink').href = 'https://card.kootenaylawndoctor.com/pay/?t=' + encodeURIComponent(e);
+    document.getElementById('prepaylink').href = 'https://card.kootenaylawndoctor.com/pay/?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : '');
     content.style.display='none';
     formwrap.style.display='block';
     updateCardPrompt();
@@ -309,7 +310,7 @@
   function stopPoll(){ if(pollTimer){ clearInterval(pollTimer); pollTimer = null; } }
   function startPoll(){ if(pollTimer) return; pollTimer = setInterval(function(){ checkCardNow(); }, 10000); }
   function checkCardNow(cb){
-    loadJson(API_PAY, {t:e, mode:'lookup'}).then(function(p){
+    loadJson(API_PAY, {t:e, e:eq, mode:'lookup'}).then(function(p){
       if(p && !p.error && p.cardLast4){
         window.acct.hasCard = true; window.acct.chargeable = !!p.chargeable;
         window.acct.cardLast4 = p.cardLast4; window.acct.cardExp = p.cardExp; window.acct.cardBrand = p.cardBrand;
@@ -366,7 +367,7 @@
       var dm = document.getElementById('chargedecline');
       yes.disabled = true; yes.innerHTML = '<span class="spinner"></span>Charging your card&hellip;';
       dm.style.display = 'none'; dm.textContent = '';
-      loadJson(API_PAY, {t:e, mode:'charge', confirm:true}).then(function(j){
+      loadJson(API_PAY, {t:e, e:eq, mode:'charge', confirm:true}).then(function(j){
         if(j.ok){
           formwrap.style.display='none'; content.style.display='block';
           content.innerHTML = '<h1>Paid &mdash; Season Covered</h1><p><span class="ok">&#10003;</span></p>'
@@ -516,7 +517,7 @@
 
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Confirming&hellip;';
     fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
-      t:e, mode:'submit', choice:'1', details:details, contactPref:'1',
+      t:e, e:eq, mode:'submit', choice:'1', details:details, contactPref:'1',
       first:first, last:last, email:email,
       phone:(a.phone||'').trim(),
       street:(a.street||'').trim(), city:(a.city||'').trim(), postal:(a.postal||'').trim()
