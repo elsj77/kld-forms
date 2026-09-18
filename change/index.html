@@ -8,10 +8,9 @@
   body{font-family:Segoe UI,Arial,sans-serif;background:#f4f6f8;margin:0;padding:24px 16px;}
   .wrap{max-width:640px;margin:0 auto;}
   .card{background:#fff;border-radius:10px;padding:28px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:20px;}
-  .brandbar{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
-  .brandbar img{width:72px;height:72px;border-radius:10px;object-fit:contain;background:#fff;}
-  .brandname{font-size:20px;font-weight:800;color:#0f2338;line-height:1.25;}
-  .brandsub{font-size:13px;color:#667;font-weight:500;}
+  .pagehead{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
+  .pagehead img{width:60px;height:60px;border-radius:10px;object-fit:contain;flex:none;}
+  .pagesub{font-size:13px;color:#667;font-weight:500;margin:2px 0 0;}
   h1{color:#0f2338;font-size:22px;margin:0 0 6px;}
   h2{color:#0f2338;font-size:17px;margin:26px 0 10px;}
   p{color:#444;font-size:15px;line-height:1.5;}
@@ -42,7 +41,14 @@
   .btn:hover{background-color:#15803d;}
   .btn[disabled]{background-color:#a7d7b9;cursor:wait;}
   .err{color:#b91c1c;font-weight:600;font-size:14px;margin-top:12px;display:none;}
-  .quote{display:inline-block;background:#eef4fb;color:#33506e;font-size:11.5px;font-weight:600;border-radius:6px;padding:2px 8px;margin-left:8px;vertical-align:2px;}
+  .quote{display:inline-block;background:#2563eb;color:#fff;font-size:12px;font-weight:700;border-radius:6px;padding:2px 9px;margin-left:8px;vertical-align:2px;}
+  .total{display:inline-block;background:#16a34a;color:#fff;font-size:12px;font-weight:700;border-radius:6px;padding:2px 9px;margin-left:8px;vertical-align:2px;}
+  .acct-row1{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+  .acct-row1 .quote,.acct-row1 .total{margin-left:0;}
+  .acct-name{font-size:16px;font-weight:800;color:#0f2338;}
+  .acct-row2{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;row-gap:6px;}
+  .acct-item{font-size:13px;color:#1b2933;font-weight:600;display:inline-flex;align-items:baseline;gap:5px;overflow-wrap:anywhere;}
+  .acct-item .k{font-size:10.5px;color:#8a94a0;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
   .acct{background:#f7f9fb;border:1px solid #dfe6ec;border-radius:9px;padding:11px 14px;margin:0 0 20px;}
   .acct .lbl{font-size:10px;font-weight:700;letter-spacing:.06em;color:#8a94a0;text-transform:uppercase;margin:0 0 6px;}
   .acct .row{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px;}
@@ -64,15 +70,14 @@
 </style>
 </head><body><div class="wrap">
 <div class="card" id="main">
-  <div class="brandbar">
+  <div class="pagehead">
     <img src="../logo.png" alt="Kootenay Lawn Doctor logo">
     <div>
-      <div class="brandname">Kootenay Lawn Doctor</div>
-      <div class="brandsub">Lawn Doctor &middot; Mow &amp; Snow &middot; Blue Spruce</div>
+      <h1>Change or Cancel Your Snow Season</h1>
+      <p class="pagesub">Kootenay Lawn Doctor &middot; Mow &amp; Snow &middot; Blue Spruce</p>
     </div>
   </div>
   <div id="content">
-    <h1>Change or Cancel Your Snow Season</h1>
     <p id="status"><span class="spinner"></span>Loading your details&hellip;</p>
   </div>
   <div id="formwrap" style="display:none;">
@@ -102,7 +107,7 @@
 
     <div class="section" id="sec-1">
       <label>How would you prefer to pay for your season?</label>
-      <label class="radio-card"><input type="radio" name="payplan" value="Installments with a card on file"> Installments with a card on file<span class="rec-tag">Recommended</span><br><span class="opt">Your renewal is confirmed right away &mdash; your card is billed automatically each month. Nothing more to do.</span></label>
+      <label class="radio-card"><input type="radio" name="payplan" value="Installments with a card on file"> Installments with a card on file<br><span class="opt">Your renewal is confirmed right away &mdash; your card is billed automatically each month. Nothing more to do.</span></label>
       <label class="radio-card"><input type="radio" name="payplan" value="Prepay the full season online"> Prepay the full season online <span class="opt">(we'll send you the secure payment link)</span></label>
       <label class="radio-card"><input type="radio" name="payplan" value="E-transfer"> E-transfer</label>
       <label class="radio-card"><input type="radio" name="payplan" value="Cheque"> Cheque</label>
@@ -142,7 +147,7 @@
     <p class="small" style="margin-top:14px;">Goes straight to our office — we'll follow up to confirm before anything changes.</p>
   </div>
 </div>
-<div class="card"><p class="small" style="margin:0;">Questions? Call our office at 250-489-2031 &mdash; Cranbrook &amp; Kimberley, Fernie, Sparwood &amp; Elkford.</p></div>
+<div class="card"><p class="small" style="margin:0;">Questions? Call our office at 250-489-2031.</p></div>
 </div>
 <script>
 (function(){
@@ -158,7 +163,7 @@
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function fail(msg){
     formwrap.style.display='none';
-    content.innerHTML = '<h1>Change or Cancel Your Snow Season</h1><p style="color:#b91c1c;font-weight:600;">' + msg + '</p><p class="small">You can also call our office at 250-489-2031 and we\'ll take care of it over the phone.</p>';
+    content.innerHTML = '<p style="color:#b91c1c;font-weight:600;">' + msg + '</p><p class="small">You can also call our office at 250-489-2031 and we\'ll take care of it over the phone.</p>';
   }
   function showErr(msg){ errEl.textContent = msg; errEl.style.display = 'block'; errEl.scrollIntoView({behavior:'smooth',block:'center'}); }
 
@@ -174,14 +179,16 @@
       window.acct = j;
       var who = document.getElementById('who');
       who.innerHTML = '<p class="lbl">Confirming details for</p>'
-        + '<div class="row">'
-        + '<div class="f"><p class="k">Name</p><p class="v">' + esc([j.first,j.last].filter(Boolean).join(' ')) + '</p></div>'
-        + '<div class="f"><p class="k">Phone</p><p class="v">' + esc(j.phone || '—') + '</p></div>'
-        + '<div class="f"><p class="k">Email</p><p class="v">' + esc(j.email || '—') + '</p></div>'
-        + '<div class="f"><p class="k">Service address</p><p class="v">' + esc([j.street,j.city,j.postal].filter(Boolean).join(', ')) + '</p></div>'
+        + '<div class="acct-row1">'
+        + '<span class="acct-name">' + esc([j.first,j.last].filter(Boolean).join(' ')) + '</span>'
+        + '<span class="quote">Snow renewal #' + esc(j.number || '') + '</span>'
+        + (j.total ? '<span class="total">Season total $' + Number(j.total).toFixed(2) + '</span>' : '')
         + '</div>'
-        + '<div class="chips"><span class="quote">Snow renewal #' + esc(j.number || '') + '</span></div>'
-        + '<p class="note">These come straight from your account. If anything has changed, just tell us in your note below and we&rsquo;ll update it when we confirm.</p>';
+        + '<div class="acct-row2">'
+        + '<span class="acct-item"><span class="k">Phone</span>' + esc(j.phone || '—') + '</span>'
+        + '<span class="acct-item"><span class="k">Email</span>' + esc(j.email || '—') + '</span>'
+        + '<span class="acct-item"><span class="k">Service address</span>' + esc([j.street,j.city,j.postal].filter(Boolean).join(', ')) + '</span>'
+        + '</div>';
       who.style.display='block';
       content.style.display='none';
       formwrap.style.display='block';

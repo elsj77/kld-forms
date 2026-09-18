@@ -245,7 +245,7 @@
     document.getElementById('maintitle').textContent = isRes ? 'Confirm Your Snow Season' : 'Accept Your Snow Season Proposal';
     document.getElementById('payhead').textContent = isRes ? 'How would you like to pay for your season?' : 'How would you like to handle your billing?';
     document.getElementById('inst-head').textContent = isRes ? 'Monthly installments ' : 'Monthly invoicing ';
-    document.getElementById('inst-dash').textContent = isRes ? '\u2014 billed to my card on file' : '\u2014 no card required';
+    document.getElementById('inst-dash').textContent = isRes ? '' : '\u2014 no card required';
     document.getElementById('submitbtn').innerHTML = isRes ? 'Confirm My Renewal On Monthly Installments &nbsp;&rarr;' : 'Accept My Proposal &nbsp;&rarr;';
     window.footDefault = null;
     if(isRes){
@@ -260,9 +260,10 @@
     document.getElementById('termsline').style.display = 'block';
 
     if(isRes){
+      var cardBit = (a.hasCard && a.cardLast4) ? ' (&bull;&bull;&bull;&bull; ' + esc(a.cardLast4) + (a.cardExp ? ', expires ' + esc(a.cardExp) : '') + ')' : '';
       document.getElementById('instopt').innerHTML = (a.installments && a.installments > 1 && a.monthly)
-        ? a.installments + ' equal monthly installments of <b>' + money(a.monthly) + '</b> &mdash; billed to your card on file automatically on ' + billDay() + ' of each month. No invoices to chase, nothing to remember.'
-        : 'Your renewal is confirmed right away. Your card is billed automatically on ' + billDay() + ' of each month &mdash; no invoices to chase, nothing to remember.';
+        ? a.installments + ' equal monthly installments of <b>' + money(a.monthly) + '</b> &mdash; billed to your card on file' + cardBit + ' automatically on ' + billDay() + ' of each month.'
+        : 'Your renewal is confirmed right away. Your card is billed automatically on ' + billDay() + ' of each month.';
     } else {
       document.getElementById('instopt').innerHTML = (a.installments && a.installments > 1 && a.monthly)
         ? 'We&rsquo;ll invoice you ' + a.installments + ' equal monthly payments of <b>' + money(a.monthly) + '</b>, starting ' + startLong() + '. Pay by EFT, e-transfer, or cheque &mdash; no card needed to accept.'
@@ -473,7 +474,7 @@
     var a = window.acct || {};
     pre.classList.toggle('show', sel === 'prepay');
     // amounts right in the selectors
-    if(a.installments && a.monthly){ document.getElementById('instamt').textContent = '\u2014 ' + (a.installments === 1 ? money(a.monthly) : a.installments + ' payments of ' + money(a.monthly)) + ' '; }
+    if(a.installments && a.monthly){ document.getElementById('instamt').textContent = '\u2014 ' + (a.installments === 1 ? money(a.monthly) : a.installments + ' equal monthly payments of ' + money(a.monthly)) + ' '; }
     if(a.total){ document.getElementById('prepayamt').textContent = '\u2014 ' + money(a.total) + ' '; }
     renderCofBox();
     if(sel === 'installments' && a.residential){
