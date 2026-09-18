@@ -150,6 +150,7 @@
   var qs = new URLSearchParams(location.search);
   var e = (qs.get('t')||'').trim(); // secure per-client portal token (Sept 17 2026)
   var eq = (qs.get('e')||'').trim(); // estimate number hint (which of this client's quotes this email is about)
+  var qq = (qs.get('q')||'').trim(); // estimate GUID link — [quotelinkurl] merge, SAP's own proposal credential (Sept 18 2026)
   var forcedT = (qs.get('type')||'').toLowerCase(); // 'residential' | 'commercial' override (renamed from t, Sept 17 2026)
   var planP = (qs.get('plan')||'').toLowerCase(); // 'prepay' | 'installments' — email CTA pre-selection (Sept 18 2026)
 
@@ -182,7 +183,7 @@
     fail('This link looks incomplete. Please use the &ldquo;Confirm My Renewal&rdquo; button in your renewal email.');
     return;
   }
-  document.getElementById('changelink').href = '../change/?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : '');
+  document.getElementById('changelink').href = qq ? ('../change/?q=' + encodeURIComponent(qq)) : ('../change/?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : ''));
 
   function loadJson(url, body){
     return fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)})
@@ -216,11 +217,11 @@
     return out;
   }
 
-  loadJson(API, {t:e, e:eq, mode:'lookup'}).then(function(j){
+  loadJson(API, {t:e, e:eq, q:qq, mode:'lookup'}).then(function(j){
     if(j.error){ fail(j.error==='not_found' ? 'We couldn\'t find your renewal quote. Please use the exact link from your renewal email, or call our office.' : 'We couldn\'t load your details right now. Please try again in a few minutes, or call our office at 250-489-2031.'); return; }
     window.acct = j;
     // second lookup: payment details (total, installments, monthly, card-on-file, chargeable)
-    return loadJson(API_PAY, {t:e, e:eq, mode:'lookup'}).then(function(p){
+    return loadJson(API_PAY, {t:e, e:eq, q:qq, mode:'lookup'}).then(function(p){
       if(!p.error){ setStart(p); window.acct.total = p.total; window.acct.installments = p.installments; window.acct.monthly = p.monthly;
         window.acct.subtotal = p.subtotal; window.acct.tax = p.tax; window.acct.items = (p.items||[]);
         window.acct.chargeable = !!p.chargeable;
@@ -294,7 +295,7 @@
       + '<div class="chips"><span class="quote">Snow renewal #' + esc(a.number || '') + '</span>' + (a.total ? '<span class="total">Season total ' + money(a.total) + '</span>' : '') + '</div>'
       + '<p class="note">These come straight from your account. If anything has changed, just tell us in your note below and we&rsquo;ll update it when we confirm.</p>';
     who.style.display='block';
-    document.getElementById('prepaylink').href = 'https://card.kootenaylawndoctor.com/pay/?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : '');
+    document.getElementById('prepaylink').href = qq ? ('https://card.kootenaylawndoctor.com/pay/?q=' + encodeURIComponent(qq)) : ('https://card.kootenaylawndoctor.com/pay/?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : ''));
     content.style.display='none';
     formwrap.style.display='block';
     if(planP === 'prepay' || planP === 'installments'){
@@ -322,7 +323,7 @@
     var brand = a.cardBrand ? esc(a.cardBrand) + ' ' : '';
     var h = '<div class="cardline">Card on file: ' + brand + '<span class="dots">&bull;&bull;&bull;&bull;</span> ' + esc(a.cardLast4 || '') + (a.cardExp ? ' &middot; expires ' + esc(a.cardExp) : '') + '</div>';
     if(withChangeLink){
-      h = '<div class="cardline-row">' + h + '<a class="chgbtn" href="https://card.kootenaylawndoctor.com/?t=' + encodeURIComponent(e) + '" target="_blank" rel="noopener">Use a different card</a></div>';
+      h = '<div class="cardline-row">' + h + '<a class="chgbtn" href="https://card.kootenaylawndoctor.com/' + (qq ? ('?q=' + encodeURIComponent(qq)) : ('?t=' + encodeURIComponent(e))) + '" target="_blank" rel="noopener">Use a different card</a></div>';
     }
     return h;
   }
@@ -332,7 +333,7 @@
   function stopPoll(){ if(pollTimer){ clearInterval(pollTimer); pollTimer = null; } }
   function startPoll(){ if(pollTimer) return; pollTimer = setInterval(function(){ checkCardNow(); }, 10000); }
   function checkCardNow(cb){
-    loadJson(API_PAY, {t:e, e:eq, mode:'lookup'}).then(function(p){
+    loadJson(API_PAY, {t:e, e:eq, q:qq, mode:'lookup'}).then(function(p){
       if(!p.error) setStart(p);
       if(p && !p.error && p.cardLast4){
         window.acct.hasCard = true; window.acct.chargeable = !!p.chargeable;
@@ -391,7 +392,7 @@
       var dm = document.getElementById('chargedecline');
       yes.disabled = true; yes.innerHTML = '<span class="spinner"></span>Charging your card&hellip;';
       dm.style.display = 'none'; dm.textContent = '';
-      loadJson(API_PAY, {t:e, e:eq, mode:'charge', confirm:true}).then(function(j){
+      loadJson(API_PAY, {t:e, e:eq, q:qq, mode:'charge', confirm:true}).then(function(j){
         if(j.ok){
           formwrap.style.display='none'; content.style.display='block';
           content.innerHTML = '<h1>Paid &mdash; Season Covered</h1><p><span class="ok">&#10003;</span></p>'
@@ -436,7 +437,7 @@
         box.innerHTML = '<div class="cardbox need">'
           + '<p class="cb-t">A card saved on file is required for monthly installments</p>'
           + '<p>Your card is billed automatically on ' + billDay() + ' of each month &mdash; we can&rsquo;t set that up until a card is on file. Add one now (bank-grade secure, about 2 minutes):</p>'
-          + '<a class="btn-inline" href="https://card.kootenaylawndoctor.com/?t=' + encodeURIComponent(e) + '" target="_blank" rel="noopener">Add / Update Card &rarr;</a>'
+          + '<a class="btn-inline" href="https://card.kootenaylawndoctor.com/' + (qq ? ('?q=' + encodeURIComponent(qq)) : ('?t=' + encodeURIComponent(e))) + '" target="_blank" rel="noopener">Add / Update Card &rarr;</a>'
           + '<div style="margin-top:10px;"><button type="button" class="link-quiet" id="checkcardbtn">I&rsquo;ve added my card &mdash; check again</button></div>'
           + '<p style="margin-top:8px;margin-bottom:0;" class="small">We also check automatically every 10 seconds &mdash; the moment your card lands, your renewal unlocks right here.</p>'
           + '</div>';
@@ -541,7 +542,7 @@
 
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Confirming&hellip;';
     fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
-      t:e, e:eq, mode:'submit', choice:'1', details:details, contactPref:'1',
+      t:e, e:eq, q:qq, mode:'submit', choice:'1', details:details, contactPref:'1',
       first:first, last:last, email:email,
       phone:(a.phone||'').trim(),
       street:(a.street||'').trim(), city:(a.city||'').trim(), postal:(a.postal||'').trim()
