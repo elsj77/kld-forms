@@ -151,6 +151,7 @@
   var e = (qs.get('t')||'').trim(); // secure per-client portal token (Sept 17 2026)
   var eq = (qs.get('e')||'').trim(); // estimate number hint (which of this client's quotes this email is about)
   var forcedT = (qs.get('type')||'').toLowerCase(); // 'residential' | 'commercial' override (renamed from t, Sept 17 2026)
+  var planP = (qs.get('plan')||'').toLowerCase(); // 'prepay' | 'installments' — email CTA pre-selection (Sept 18 2026)
 
   // quote start date (from snowRenewCharge lookup.start) — installment billing day follows it.
   // Falls back to Nov 1, 2026 when the quote has no valid start date.
@@ -296,6 +297,15 @@
     document.getElementById('prepaylink').href = 'https://card.kootenaylawndoctor.com/pay/?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : '');
     content.style.display='none';
     formwrap.style.display='block';
+    if(planP === 'prepay' || planP === 'installments'){
+      var pr = document.querySelector('input[name=payplan][value=' + planP + ']');
+      if(pr){
+        pr.checked = true;
+        document.querySelectorAll('input[name=payplan]').forEach(function(o){ o.closest('label.radio-card').classList.remove('checked'); });
+        pr.closest('label.radio-card').classList.add('checked');
+      }
+      try{ document.getElementById('payhead').scrollIntoView(); }catch(err){}
+    }
     updateCardPrompt();
   }).catch(function(){ fail('Connection problem &mdash; please try again in a few minutes, or call our office.'); });
 
