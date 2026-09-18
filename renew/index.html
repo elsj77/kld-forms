@@ -22,17 +22,13 @@
   label .opt{font-weight:400;color:#8a94a0;font-size:12px;}
   textarea{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #c6cad2;border-radius:8px;font-size:15px;font-family:inherit;color:#1b2933;background:#fff;resize:vertical;min-height:80px;}
   textarea:focus{outline:2px solid #16a34a;border-color:#16a34a;}
-  .radio-card{display:flex;align-items:center;gap:14px;border:1px solid #d7dee7;border-radius:8px;padding:13px 14px;margin:8px 0;cursor:pointer;font-size:15px;color:#1b2933;background:#fff;}
+  .radio-card{display:block;border:1px solid #d7dee7;border-radius:8px;padding:13px 14px;margin:8px 0;cursor:pointer;font-size:15px;color:#1b2933;background:#fff;}
   .radio-card:hover{border-color:#16a34a;}
   .radio-card.checked{border:2px solid #16a34a;padding:12px 13px;}
   #rc-installments:hover{border-color:#2563eb;}
   #rc-installments.checked{border-color:#2563eb;background:#eff6ff;}
   #rc-prepay.checked{border-color:#16a34a;background:#f0faf3;}
-  .radio-card input{margin:0;flex:0 0 auto;}
-  .rc-main{flex:1 1 auto;min-width:0;}
-  .rc-line{line-height:1.45;}
-  .btn.rc-btn{width:auto;margin:0;padding:12px 20px;font-size:14.5px;white-space:nowrap;flex:0 0 auto;}
-  @media(max-width:620px){.radio-card{flex-wrap:wrap;}.btn.rc-btn{width:100%;margin-top:12px;white-space:normal;}}
+  .radio-card input{margin-right:10px;vertical-align:-2px;}
   .btn{background-color:#16a34a;color:#fff;padding:14px 24px;border:none;border-radius:10px;font-size:15.5px;font-weight:700;cursor:pointer;margin-top:18px;width:100%;box-shadow:0 1px 2px rgba(22,163,74,.35),inset 0 1px 0 rgba(255,255,255,.18);transition:background-color .15s ease,box-shadow .15s ease,transform .05s ease;}
   .btn:hover{background-color:#15803d;box-shadow:0 2px 6px rgba(22,163,74,.4);}
   .btn:active{transform:translateY(1px);}
@@ -148,15 +144,9 @@
     <div class="svc" id="services" style="display:none;"></div>
 
     <h2 style="margin-top:0;" id="payhead">How would you like to pay for your season?</h2>
-    <div class="radio-card" id="rc-installments"><input type="radio" name="payplan" value="installments" checked>
-      <div class="rc-main"><div class="rc-line"><span id="inst-head">Monthly installments </span><span class="sel-amt" id="instamt"></span><span id="inst-dash"></span></div><span class="opt" id="instopt"></span></div>
-      <button class="btn rc-btn" id="btn-installments" type="button">Confirm My Renewal &mdash; Installments &rarr;</button>
-    </div>
+    <label class="radio-card" id="rc-installments"><input type="radio" name="payplan" value="installments" checked> <span id="inst-head">Monthly installments </span><span class="sel-amt" id="instamt"></span><span id="inst-dash">&mdash; billed to my card on file</span><br><span class="opt" id="instopt"></span></label>
     <div id="cardprompt"></div>
-    <div class="radio-card" id="rc-prepay"><input type="radio" name="payplan" value="prepay">
-      <div class="rc-main"><div class="rc-line">Prepay the full season <span class="sel-amt" id="prepayamt"></span></div><span class="opt">(one single payment)</span></div>
-      <button class="btn rc-btn" id="btn-prepay" type="button">Prepay the Season &rarr;</button>
-    </div>
+    <label class="radio-card" id="rc-prepay"><input type="radio" name="payplan" value="prepay"> Prepay the full season <span class="sel-amt" id="prepayamt"></span><span class="opt">(one single payment)</span></label>
     <div class="prepaybox" id="prepaybox">
       <div id="prepayhosted">
         <p>Pay your full season in one secure payment:</p>
@@ -171,6 +161,7 @@
     <div class="cofbox" id="cofbox" style="display:none;"></div>
     <div id="payconfirm" style="display:none;"></div>
     <p class="terms" id="termsline" style="display:none;"></p>
+    <button class="btn" id="submitbtn">Confirm My Renewal &nbsp;&rarr;</button>
     <p class="small" id="footnote" style="margin-top:14px;">Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your season automatically on your season start date to ensure you don&rsquo;t miss out on services. Need to change or cancel instead? Just <a href="../change/?t=PLACEHOLDER">click here</a>.</p>
   </div>
 </div>
@@ -292,6 +283,7 @@
     document.getElementById('payhead').textContent = isRes ? 'How would you like to pay for your season?' : 'How would you like to handle your billing?';
     document.getElementById('inst-head').textContent = isRes ? 'Monthly installments ' : 'Monthly invoicing ';
     document.getElementById('inst-dash').textContent = isRes ? '' : '\u2014 no card required';
+    document.getElementById('submitbtn').innerHTML = isRes ? 'Confirm My Renewal &nbsp;&rarr;' : 'Accept My Proposal &nbsp;&rarr;';
     window.footDefault = null;
     if(isRes){
       document.getElementById('footnote').innerHTML = 'Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your season automatically on ' + startLong() + ' to ensure you don&rsquo;t miss out on services.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
@@ -352,23 +344,26 @@
     document.getElementById('prepaylink').href = qq ? ('https://card.kootenaylawndoctor.com/pay/?q=' + encodeURIComponent(qq)) : ('https://card.kootenaylawndoctor.com/pay/?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : ''));
     content.style.display='none';
     formwrap.style.display='block';
-    if(planP === 'prepay' || planP === 'installments'){ selectPlan(planP); }
+    if(planP === 'prepay' || planP === 'installments'){
+      var pr = document.querySelector('input[name=payplan][value=' + planP + ']');
+      if(pr){
+        pr.checked = true;
+        document.querySelectorAll('input[name=payplan]').forEach(function(o){ o.closest('label.radio-card').classList.remove('checked'); });
+        pr.closest('label.radio-card').classList.add('checked');
+      }
+    }
     try{ window.scrollTo(0,0); }catch(err){}
     updateCardPrompt();
   }).catch(function(){ fail('Connection problem &mdash; please try again in a few minutes, or call our office.'); });
 
-  function selectPlan(v){
-    var pr = document.querySelector('input[name=payplan][value=' + v + ']');
-    document.querySelectorAll('input[name=payplan]').forEach(function(o){ o.closest('.radio-card').classList.remove('checked'); });
-    if(pr){ pr.checked = true; pr.closest('.radio-card').classList.add('checked'); }
-  }
-  window.selectPlan = selectPlan;
   document.querySelectorAll('input[name=payplan]').forEach(function(r){
-    r.addEventListener('change', function(){ selectPlan(r.value); updateCardPrompt(); });
+    r.addEventListener('change', function(){
+      document.querySelectorAll('input[name=payplan]').forEach(function(o){ o.closest('label.radio-card').classList.remove('checked'); });
+      r.closest('label.radio-card').classList.add('checked');
+      updateCardPrompt();
+    });
   });
-  document.getElementById('rc-installments').addEventListener('click', function(ev){ if(ev.target.closest('button')) return; selectPlan('installments'); updateCardPrompt(); });
-  document.getElementById('rc-prepay').addEventListener('click', function(ev){ if(ev.target.closest('button')) return; selectPlan('prepay'); updateCardPrompt(); });
-  selectPlan('installments');
+  document.querySelector('input[name=payplan][value=installments]').closest('label.radio-card').classList.add('checked');
 
   function cardOnFileHtml(a, withChangeLink){
     var brand = a.cardBrand ? esc(a.cardBrand) + ' ' : '';
@@ -395,26 +390,30 @@
     }).catch(function(){ if(cb) cb(false); });
   }
   function updateSubmitState(blocked){
-    var btn = document.getElementById('btn-installments');
+    var btn = document.getElementById('submitbtn');
+    var wasPay = !!btn.dataset.paymode; // leaving prepay mode → must restore the standard label even though the button is enabled (Sept 18 fix)
+    btn.dataset.paymode = '';
     var pc = document.getElementById('payconfirm');
     if(pc) pc.style.display = 'none';
     if(window.footDefault !== undefined){ document.getElementById('footnote').innerHTML = window.footDefault; }
-    if(blocked){ btn.disabled = true; btn.innerHTML = 'Add a Card to Confirm'; }
-    else if(btn.dataset.busy !== '1'){
+    if(blocked){ btn.disabled = true; btn.innerHTML = 'Add a Card Above to Confirm'; }
+    else if((btn.disabled || wasPay) && btn.dataset.busy !== '1'){
       btn.disabled = false;
-      btn.innerHTML = ((window.acct||{}).residential === false) ? 'Accept My Proposal &nbsp;&rarr;' : 'Confirm My Renewal &mdash; Installments &nbsp;&rarr;';
+      btn.innerHTML = ((window.acct||{}).residential === false) ? 'Accept My Proposal &nbsp;&rarr;' : 'Confirm My Renewal &nbsp;&rarr;';
     }
   }
 
   // ── prepay mode: bottom button becomes the pay button (payment required to confirm) ──
   function setPayMode(a){
-    var btn = document.getElementById('btn-prepay');
+    var btn = document.getElementById('submitbtn');
     var pc = document.getElementById('payconfirm');
     if(pc) pc.style.display = 'none';
-    if(a.chargeable && a.total){
+    btn.dataset.paymode = (a.chargeable && a.total) ? 'charge' : 'hosted';
+    btn.disabled = false;
+    if(btn.dataset.paymode === 'charge'){
       btn.innerHTML = 'Pay ' + money(a.total) + ' Now &nbsp;&rarr;';
     } else {
-      btn.innerHTML = 'Prepay the Season &rarr;';
+      btn.innerHTML = 'Pay ' + (a.total ? money(a.total) + ' ' : '') + 'Now &mdash; Secure Payment Page &rarr;';
     }
     if(window.footDefault !== undefined && a.residential !== false){
       document.getElementById('footnote').innerHTML = 'Your renewal is confirmed the moment your payment goes through &mdash; we&rsquo;ll email your receipt. Prefer monthly installments instead? Just pick that option above.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
@@ -428,7 +427,7 @@
     var pc = document.getElementById('payconfirm');
     pc.innerHTML = '<div class="confirmbox" style="display:block;">'
       + '<p class="c-t">Confirm your payment</p>'
-      + '<p>You\'re about to charge <b>' + money(a.total) + '</b> to your ' + (a.cardBrand ? esc(a.cardBrand) + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + '. This pays your 2026&ndash;27 snow season in full and ' + (a.residential === false ? 'accepts your proposal.' : 'confirms your renewal.') + '</p>'
+      + '<p>You\'re about to charge <b>' + money(a.total) + '</b> to your ' + (a.cardBrand ? esc(a.cardBrand) + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + '. This pays your 2026&ndash;27 snow season in full and confirms your renewal.</p>'
       + '<div class="c-btns"><button type="button" class="btn-danger" id="confirmyes">Yes, charge my card</button>'
       + '<button type="button" class="btn-ghost" id="confirmno">Go back</button></div>'
       + '<div class="declinemsg" id="chargedecline" style="margin-top:12px;"></div>'
@@ -446,7 +445,7 @@
           formwrap.style.display='none'; content.style.display='block';
           content.innerHTML = '<h1>Paid &mdash; Season Covered</h1><p><span class="ok">&#10003;</span></p>'
             + '<p style="font-size:17px;">Thanks, ' + esc((window.acct.first||'')) + '. We charged <b>' + money(j.amount) + '</b> to your card ending in ' + esc(j.last4 || (window.acct.cardLast4||'')) + '.</p>'
-            + '<p>Your 2026&ndash;27 snow season is paid in full and ' + (a.residential === false ? 'your proposal is accepted' : 'your renewal is confirmed') + '. Our office has been notified, your account is updated, and a receipt is on its way to your email.</p>'
+            + '<p>Your 2026&ndash;27 snow season is paid in full and your renewal is confirmed. Our office has been notified, your account is updated, and a receipt is on its way to your email.</p>'
             + '<p class="small">You can close this page. Questions? Call us at 250-489-2031.</p>';
           window.scrollTo(0,0);
         } else {
@@ -578,36 +577,31 @@
   }
   window.updateCardPrompt = updateCardPrompt;
 
-  document.getElementById('btn-installments').addEventListener('click', function(ev){
-    ev.stopPropagation();
-    selectPlan('installments'); updateCardPrompt();
-    var a = window.acct || {};
-    if(a.residential && !a.hasCard){
-      var cb = document.getElementById('cofbox');
-      if(cb && cb.style.display !== 'none') cb.scrollIntoView({behavior:'smooth', block:'center'});
+  document.getElementById('submitbtn').addEventListener('click', function(){
+    errEl.style.display='none';
+    var btn = this;
+    var paymode = btn.dataset.paymode || '';
+    if(paymode){
+      stopPoll();
+      if(paymode === 'charge'){ showChargeConfirm(); }
+      else {
+        var link = document.getElementById('prepaylink');
+        window.open(link.href, '_blank', 'noopener');
+        showErr('Finish your payment in the secure window that just opened. Your renewal is confirmed the moment your payment goes through \u2014 then you can close this page.');
+      }
       return;
     }
-    runInstallmentsConfirm();
-  });
-
-  document.getElementById('btn-prepay').addEventListener('click', function(ev){
-    ev.stopPropagation();
-    selectPlan('prepay'); updateCardPrompt();
-    var a = window.acct || {};
-    if(a.chargeable && a.total){
-      showChargeConfirm();
-    } else {
-      var link = document.getElementById('prepaylink');
-      window.open(link.href, '_blank', 'noopener');
-      showErr(a.residential === false
-        ? 'Finish your payment in the secure window that just opened. Your proposal is accepted the moment your payment goes through \u2014 then you can close this page.'
-        : 'Finish your payment in the secure window that just opened. Your renewal is confirmed the moment your payment goes through \u2014 then you can close this page.');
+    btn.dataset.busy = '1'; stopPoll();
+    var sel = (document.querySelector('input[name=payplan]:checked')||{}).value;
+    if(sel === 'prepay'){
+      showErr('Use the prepay options above to pay in one payment.');
+      return;
     }
-  });
-
-  function runInstallmentsConfirm(){
-    errEl.style.display='none';
     var a = window.acct || {};
+    if(sel === 'installments' && a.residential && !a.hasCard){
+      showErr('A card saved on file is required for monthly installments. Please add your card above, or choose prepay instead.');
+      return;
+    }
     var first = (a.first||'').trim(), last = (a.last||'').trim(), email = (a.email||'').trim();
     var lines;
     if(a.residential){
@@ -625,10 +619,8 @@
     if(a.hasCard && a.cardLast4) lines.push('CARD ON FILE: ends ' + a.cardLast4 + (a.cardExp ? ', exp ' + a.cardExp : '') + '.');
     else lines.push('CLIENT HAS NO CARD ON FILE YET &mdash; card-add link shown on confirm page; office to verify before first billing run.');
     lines.push('CONTACT PREFERENCE: Email.');
-    var details = lines.join(' ').replace(/&mdash;/g,'\u2014').replace(/&rsquo;/g,"'");
+    var details = lines.join(' ').replace(/&mdash;/g,'—').replace(/&rsquo;/g,"'");
 
-    var btn = document.getElementById('btn-installments');
-    btn.dataset.busy = '1'; stopPoll();
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Confirming&hellip;';
     fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
       t:e, e:eq, q:qq, mode:'submit', choice:'1', details:details, contactPref:'1',
@@ -659,15 +651,15 @@
             + '<p class="small">A confirmation is on its way to your email. You can close this page. Need something sooner? Call us at 250-489-2031.</p>';
           window.scrollTo(0,0);
         } else {
-          btn.dataset.busy = ''; updateSubmitState(false);
-          showErr(j.error==='missing_fields' ? 'Please fill in the required fields and try again.' : 'We couldn\'t send your confirmation just now — please try again in a moment, or call our office at 250-489-2031.');
+          btn.disabled = false; btn.dataset.busy = ''; btn.innerHTML = 'Confirm My Renewal On Monthly Installments &nbsp;&rarr;';
+          showErr(j.error==='missing_fields' ? 'Please fill in the required fields and try again.' : 'We couldn\'t send your confirmation just now — please try again in a moment, or call us at 250-489-2031.');
         }
       })
       .catch(function(){
-        btn.dataset.busy = ''; updateSubmitState(false);
+        btn.disabled = false; btn.dataset.busy = ''; btn.innerHTML = 'Confirm My Renewal On Monthly Installments &nbsp;&rarr;';
         showErr('Connection problem — please try again in a few minutes, or call our office at 250-489-2031.');
       });
-  }
+  });
 })();
 </script>
 </body></html>
