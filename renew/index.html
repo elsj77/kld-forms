@@ -8,10 +8,8 @@
   body{font-family:Segoe UI,Arial,sans-serif;background:#f4f6f8;margin:0;padding:24px 16px;}
   .wrap{max-width:640px;margin:0 auto;}
   .card{background:#fff;border-radius:10px;padding:28px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:20px;}
-  .brandbar{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
-  .brandbar img{width:72px;height:72px;border-radius:10px;object-fit:contain;background:#fff;}
-  .brandname{font-size:20px;font-weight:800;color:#0f2338;line-height:1.25;}
-  .brandsub{font-size:13px;color:#667;font-weight:500;}
+  .pagehead{margin-bottom:18px;}
+  .pagesub{font-size:13px;color:#667;font-weight:500;margin:2px 0 0;}
   h1{color:#0f2338;font-size:22px;margin:0 0 6px;}
   h2{color:#0f2338;font-size:17px;margin:26px 0 10px;}
   p{color:#444;font-size:15px;line-height:1.5;}
@@ -36,16 +34,14 @@
   .err{color:#b91c1c;font-weight:600;font-size:14px;margin-top:12px;display:none;}
   .quote{display:inline-block;background:#eef4fb;color:#33506e;font-size:11.5px;font-weight:600;border-radius:6px;padding:2px 8px;margin-left:8px;vertical-align:2px;}
   .total{display:inline-block;background:#0f2338;color:#fff;font-size:12px;font-weight:700;border-radius:6px;padding:2px 9px;margin-left:8px;vertical-align:2px;}
-  .acct{background:#f7f9fb;border:1px solid #dfe6ec;border-radius:9px;padding:11px 14px;margin:0 0 20px;}
-  .acct .lbl{font-size:10px;font-weight:700;letter-spacing:.06em;color:#8a94a0;text-transform:uppercase;margin:0 0 6px;}
-  .acct .row{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px;}
-  @media(max-width:520px){.acct .row{grid-template-columns:1fr;}}
-  .acct .f{min-width:0;display:flex;align-items:baseline;gap:6px;padding:3px 0;border-bottom:1px solid #eef1f5;}
-  .acct .k{font-size:10.5px;color:#8a94a0;font-weight:600;flex:0 0 auto;white-space:nowrap;}
-  .acct .v{font-size:13px;color:#1b2933;font-weight:600;overflow-wrap:anywhere;text-align:right;flex:1;}
-  .acct .full{grid-column:1 / -1;}
-  .acct .note{font-size:10.5px;color:#8a94a0;margin:8px 0 0;line-height:1.4;}
-  .acct .chips{margin-top:7px;}
+  .acct{background:#f7f9fb;border:1px solid #dfe6ec;border-radius:9px;padding:13px 14px;margin:0 0 20px;}
+  .acct .lbl{font-size:10px;font-weight:700;letter-spacing:.06em;color:#8a94a0;text-transform:uppercase;margin:0 0 8px;}
+  .acct-row1{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+  .acct-row1 .quote,.acct-row1 .total{margin-left:0;}
+  .acct-name{font-size:16px;font-weight:800;color:#0f2338;}
+  .acct-row2{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;row-gap:6px;}
+  .acct-item{font-size:13px;color:#1b2933;font-weight:600;display:inline-flex;align-items:baseline;gap:5px;overflow-wrap:anywhere;}
+  .acct-item .k{font-size:10.5px;color:#8a94a0;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
   .rec-tag{display:inline-block;background:#16a34a;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.05em;border-radius:5px;padding:2px 7px;margin-left:6px;vertical-align:2px;text-transform:uppercase;}
   .cardbox{margin-top:14px;border:1px solid #bcd9c6;background:#f0faf3;border-radius:10px;padding:15px 16px;}
   .cardbox .cb-t{font-size:14.5px;font-weight:700;color:#14532d;margin:0 0 4px;}
@@ -102,15 +98,11 @@
 </style>
 </head><body><div class="wrap">
 <div class="card" id="main">
-  <div class="brandbar">
-    <img src="../logo.png" alt="Kootenay Lawn Doctor logo">
-    <div>
-      <div class="brandname">Kootenay Lawn Doctor</div>
-      <div class="brandsub">Lawn Doctor &middot; Mow &amp; Snow &middot; Blue Spruce</div>
-    </div>
+  <div class="pagehead">
+    <h1 id="maintitle">Confirm Your Snow Season</h1>
+    <p class="pagesub">Kootenay Lawn Doctor &middot; Mow &amp; Snow &middot; Blue Spruce</p>
   </div>
   <div id="content">
-    <h1 id="maintitle">Confirm Your Snow Season</h1>
     <p id="status"><span class="spinner"></span>Loading your details&hellip;</p>
   </div>
   <div id="formwrap" style="display:none;">
@@ -175,7 +167,7 @@
   function money(n){ return '$' + (Number(n)||0).toFixed(2); }
   function fail(msg){
     formwrap.style.display='none';
-    content.innerHTML = '<h1>Confirm Your Snow Season</h1><p style="color:#b91c1c;font-weight:600;">' + msg + '</p><p class="small">You can also call our office at 250-489-2031 and we\'ll take care of it over the phone.</p>';
+    content.innerHTML = '<p style="color:#b91c1c;font-weight:600;">' + msg + '</p><p class="small">You can also call our office at 250-489-2031 and we\'ll take care of it over the phone.</p>';
   }
   function showErr(msg){ errEl.textContent = msg; errEl.style.display = 'block'; errEl.scrollIntoView({behavior:'smooth',block:'center'}); }
 
@@ -286,14 +278,16 @@
 
     var who = document.getElementById('who');
     who.innerHTML = '<p class="lbl">' + (isRes ? 'Confirming your renewal for' : 'Accepting your proposal for') + '</p>'
-      + '<div class="row">'
-      + '<div class="f"><p class="k">Name</p><p class="v">' + esc([a.first,a.last].filter(Boolean).join(' ')) + '</p></div>'
-      + '<div class="f"><p class="k">Phone</p><p class="v">' + esc(a.phone || '—') + '</p></div>'
-      + '<div class="f"><p class="k">Email</p><p class="v">' + esc(a.email || '—') + '</p></div>'
-      + '<div class="f"><p class="k">Service address</p><p class="v">' + esc([a.street,a.city,a.postal].filter(Boolean).join(', ')) + '</p></div>'
+      + '<div class="acct-row1">'
+      + '<span class="acct-name">' + esc([a.first,a.last].filter(Boolean).join(' ')) + '</span>'
+      + '<span class="quote">Snow renewal #' + esc(a.number || '') + '</span>'
+      + (a.total ? '<span class="total">Season total ' + money(a.total) + '</span>' : '')
       + '</div>'
-      + '<div class="chips"><span class="quote">Snow renewal #' + esc(a.number || '') + '</span>' + (a.total ? '<span class="total">Season total ' + money(a.total) + '</span>' : '') + '</div>'
-      + '<p class="note">These come straight from your account. If anything has changed, just tell us in your note below and we&rsquo;ll update it when we confirm.</p>';
+      + '<div class="acct-row2">'
+      + '<span class="acct-item"><span class="k">Phone</span>' + esc(a.phone || '—') + '</span>'
+      + '<span class="acct-item"><span class="k">Email</span>' + esc(a.email || '—') + '</span>'
+      + '<span class="acct-item"><span class="k">Service address</span>' + esc([a.street,a.city,a.postal].filter(Boolean).join(', ')) + '</span>'
+      + '</div>';
     who.style.display='block';
     document.getElementById('prepaylink').href = qq ? ('https://card.kootenaylawndoctor.com/pay/?q=' + encodeURIComponent(qq)) : ('https://card.kootenaylawndoctor.com/pay/?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : ''));
     content.style.display='none';
