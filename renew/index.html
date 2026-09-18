@@ -142,12 +142,12 @@
     <div class="err" id="err"></div>
     <div class="cofbox" id="cofbox" style="display:none;"></div>
     <div id="payconfirm" style="display:none;"></div>
-    <button class="btn" id="submitbtn">Confirm My Renewal On Monthly Installments &nbsp;&rarr;</button>
-    <p class="small" id="footnote" style="margin-top:14px;">Your renewal is confirmed the moment you send &mdash; we&rsquo;ll email you to confirm the setup. Prefer to think about it? Doing nothing also renews your season automatically on your season start date.</p>
     <p class="terms" id="termsline" style="display:none;"></p>
+    <button class="btn" id="submitbtn">Confirm My Renewal On Monthly Installments &nbsp;&rarr;</button>
+    <p class="small" id="footnote" style="margin-top:14px;">Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your season automatically on your season start date to ensure you don&rsquo;t miss out on services.</p>
   </div>
 </div>
-<div class="card"><p class="small" style="margin:0;">Questions? Call our office at 250-489-2031. Need to <a href="../change/?t=PLACEHOLDER" id="changelink">change or cancel</a> instead?</p></div>
+<div class="card"><p class="small" style="margin:0;">Need to change or cancel instead? Just <a href="../change/?t=PLACEHOLDER" id="changelink">click here</a>.</p></div>
 </div>
 <script>
 (function(){
@@ -249,7 +249,7 @@
     document.getElementById('submitbtn').innerHTML = isRes ? 'Confirm My Renewal On Monthly Installments &nbsp;&rarr;' : 'Accept My Proposal &nbsp;&rarr;';
     window.footDefault = null;
     if(isRes){
-      document.getElementById('footnote').innerHTML = 'Your renewal is confirmed the moment you send &mdash; we&rsquo;ll email you to confirm the setup. Prefer to think about it? Doing nothing also renews your season automatically on ' + startLong() + '.';
+      document.getElementById('footnote').innerHTML = 'Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your season automatically on ' + startLong() + ' to ensure you don&rsquo;t miss out on services.';
       window.footDefault = document.getElementById('footnote').innerHTML;
       document.getElementById('termsline').innerHTML = 'By confirming your renewal, you agree to our <a href="' + TC_RES + '" target="_blank" rel="noopener">Residential Snow Terms &amp; Conditions</a>.';
     } else {
