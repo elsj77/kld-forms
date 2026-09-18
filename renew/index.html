@@ -105,6 +105,21 @@
   .svc .s-sum .row.grand{color:#0369a1;font-weight:800;font-size:15px;padding-top:7px;}
   .terms{margin-top:14px;font-size:13px;color:#64748b;line-height:1.6;}
   .terms a{color:#2563eb;font-weight:600;}
+  .klfooter{border-top:1px solid #e1ecf2;padding-top:14px;margin-top:14px;text-align:center;}
+  .kf-row{display:flex;justify-content:center;align-items:stretch;flex-wrap:wrap;margin:0;}
+  .kf-brands>span,.kf-offices>span{flex:1 1 0;min-width:0;padding:0 10px;}
+  .kf-brands>span+span,.kf-offices>span+span{border-left:1px solid #d6e4ed;}
+  .kf-brands b{display:block;color:#0b5e8a;font-size:13px;font-weight:700;line-height:1.4;margin-bottom:4px;white-space:nowrap;}
+  .kf-brands a{color:#0088cc;text-decoration:none;font-weight:600;}
+  .kf-offices{margin-top:14px;}
+  .kf-offices b{display:block;color:#1e293b;font-size:13px;font-weight:700;margin-bottom:4px;}
+  .kf-offices i{font-style:normal;color:#64748b;font-size:12.5px;line-height:1.4;}
+  .kf-sites{margin-top:14px;padding-top:14px;border-top:1px solid #e1ecf2;}
+  .kf-sites a{flex:1 1 0;min-width:0;padding:0 10px;color:#0088cc;text-decoration:none;font-weight:600;white-space:nowrap;}
+  @media(max-width:560px){
+    .kf-brands>span+span,.kf-offices>span+span{border-left:none;border-top:1px solid #d6e4ed;padding-top:12px;margin-top:12px;}
+    .kf-brands b{white-space:normal;}
+  }
 </style>
 </head><body><div class="wrap">
 <div class="card" id="main">
@@ -147,7 +162,22 @@
     <p class="small" id="footnote" style="margin-top:14px;">Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your season automatically on your season start date to ensure you don&rsquo;t miss out on services.</p>
   </div>
 </div>
-<div class="card"><p class="small" style="margin:0;">Need to change or cancel instead? Just <a href="../change/?t=PLACEHOLDER" id="changelink">click here</a>.</p></div>
+<div class="card"><p class="small" style="margin:0;">Need to change or cancel instead? Just <a href="../change/?t=PLACEHOLDER" id="changelink">click here</a>.</p><div class="klfooter">
+      <div class="kf-row kf-brands">
+        <span><b>Mow and Snow Land Services</b><a href="tel:2504231665">(250) 423-1665</a></span>
+        <span><b>Blue Spruce Landscapes</b><a href="tel:2502782583">(250) 278-2583</a></span>
+        <span><b>Kootenay Lawn Doctor Inc.</b><a href="tel:2504892031">(250) 489-2031</a></span>
+      </div>
+      <div class="kf-row kf-offices">
+        <span><b>Cranbrook Office</b><i>564 Industrial Road B<br>Cranbrook, BC V1C 4V9</i></span>
+        <span><b>Fernie Office</b><i>13 Kutenai Road<br>Fernie, BC V0B 1M5</i></span>
+      </div>
+      <div class="kf-row kf-sites">
+        <a href="https://mowandsnow.ca" target="_blank" rel="noopener">MowAndSnow.ca</a>
+        <a href="https://bluesprucelandscapes.ca" target="_blank" rel="noopener">BlueSpruceLandscapes.ca</a>
+        <a href="https://kootenaylawndoctor.com" target="_blank" rel="noopener">KootenayLawnDoctor.com</a>
+      </div>
+    </div></div>
 </div>
 <script>
 (function(){
