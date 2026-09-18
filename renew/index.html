@@ -42,7 +42,6 @@
   .acct-row2{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;row-gap:6px;}
   .acct-item{font-size:13px;color:#1b2933;font-weight:600;display:inline-flex;align-items:baseline;gap:5px;overflow-wrap:anywhere;}
   .acct-item .k{font-size:10.5px;color:#8a94a0;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
-  .rec-tag{display:inline-block;background:#16a34a;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.05em;border-radius:5px;padding:2px 7px;margin-left:6px;vertical-align:2px;text-transform:uppercase;}
   .cardbox{margin-top:14px;border:1px solid #bcd9c6;background:#f0faf3;border-radius:10px;padding:15px 16px;}
   .cardbox .cb-t{font-size:14.5px;font-weight:700;color:#14532d;margin:0 0 4px;}
   .cardbox p{margin:0 0 10px;font-size:13.5px;color:#3d5a47;}
@@ -110,7 +109,7 @@
     <div class="svc" id="services" style="display:none;"></div>
 
     <h2 style="margin-top:0;" id="payhead">How would you like to pay for your season?</h2>
-    <label class="radio-card" id="rc-installments"><input type="radio" name="payplan" value="installments" checked> <span id="inst-head">Monthly installments </span><span class="sel-amt" id="instamt"></span><span id="inst-dash">&mdash; billed to my card on file</span><span class="rec-tag" id="inst-tag">Recommended</span><br><span class="opt" id="instopt"></span></label>
+    <label class="radio-card" id="rc-installments"><input type="radio" name="payplan" value="installments" checked> <span id="inst-head">Monthly installments </span><span class="sel-amt" id="instamt"></span><span id="inst-dash">&mdash; billed to my card on file</span><br><span class="opt" id="instopt"></span></label>
     <div id="cardprompt"></div>
     <label class="radio-card" id="rc-prepay"><input type="radio" name="payplan" value="prepay"> Prepay the full season <span class="sel-amt" id="prepayamt"></span><span class="opt">(one single payment)</span></label>
     <div class="prepaybox" id="prepaybox">
@@ -133,7 +132,7 @@
     <p class="terms" id="termsline" style="display:none;"></p>
   </div>
 </div>
-<div class="card"><p class="small" style="margin:0;">Questions? Call our office at 250-489-2031 &mdash; Cranbrook &amp; Kimberley, Fernie, Sparwood &amp; Elkford. Need to <a href="../change/?t=PLACEHOLDER" id="changelink">change or cancel</a> instead?</p></div>
+<div class="card"><p class="small" style="margin:0;">Questions? Call our office at 250-489-2031. Need to <a href="../change/?t=PLACEHOLDER" id="changelink">change or cancel</a> instead?</p></div>
 </div>
 <script>
 (function(){
