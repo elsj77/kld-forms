@@ -344,12 +344,13 @@
   }
   function updateSubmitState(blocked){
     var btn = document.getElementById('submitbtn');
+    var wasPay = !!btn.dataset.paymode; // leaving prepay mode → must restore the standard label even though the button is enabled (Sept 18 fix)
     btn.dataset.paymode = '';
     var pc = document.getElementById('payconfirm');
     if(pc) pc.style.display = 'none';
     if(window.footDefault !== undefined){ document.getElementById('footnote').innerHTML = window.footDefault; }
     if(blocked){ btn.disabled = true; btn.innerHTML = 'Add a Card Above to Confirm'; }
-    else if(btn.disabled && btn.dataset.busy !== '1'){
+    else if((btn.disabled || wasPay) && btn.dataset.busy !== '1'){
       btn.disabled = false;
       btn.innerHTML = ((window.acct||{}).residential === false) ? 'Accept My Proposal &nbsp;&rarr;' : 'Confirm My Renewal &nbsp;&rarr;';
     }
