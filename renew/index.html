@@ -105,7 +105,7 @@
   .svc .s-sum{background:#f8fafc;border-top:1px solid #dfe6ec;padding:9px 14px;font-size:13px;color:#475569;}
   .svc .s-sum .row{display:flex;justify-content:space-between;padding:3px 0;}
   .svc .s-sum .row.grand{color:#0369a1;font-weight:800;font-size:15px;padding-top:7px;}
-  .terms{margin-top:14px;font-size:13px;color:#64748b;line-height:1.6;}
+  .terms{margin-top:26px;font-size:13px;color:#64748b;line-height:1.6;}
   .terms a{color:#2563eb;font-weight:600;}
   .klfooter{border-top:1px solid #e1ecf2;padding-top:16px;margin-top:16px;text-align:center;}
   .kf-row{display:flex;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin:0;}
@@ -156,9 +156,6 @@
       <div id="prepayonfile" style="display:none;"></div>
       <div class="declinemsg" id="declinemsg"></div>
     </div>
-
-    <label>Anything we should know? <span class="opt">(optional)</span></label>
-    <textarea id="note" maxlength="900" placeholder="Optional &mdash; e.g. a note about your driveway, gate code, or billing contact&hellip;"></textarea>
 
     <div class="err" id="err"></div>
     <div class="cofbox" id="cofbox" style="display:none;"></div>
@@ -487,8 +484,17 @@
     } else if(a.hasCard){
       box.style.display = 'block';
       box.className = 'cofbox';
+      var payNote = '';
+      if(sel === 'installments' && a.residential && a.monthly){
+        payNote = (a.installments === 1)
+          ? '<p class="small" style="margin-top:8px;margin-bottom:0;">Your season payment of ' + money(a.total) + ' will be billed to this card once you click the <b>Confirm My Renewal</b> button.</p>'
+          : '<p class="small" style="margin-top:8px;margin-bottom:0;">Your monthly installments of ' + money(a.monthly) + ' will be billed to this card on ' + billDay() + ' of each month once you click the <b>Confirm My Renewal</b> button.</p>';
+      } else if(sel === 'prepay' && a.total){
+        payNote = '<p class="small" style="margin-top:8px;margin-bottom:0;">Your prepayment of ' + money(a.total) + ' will be charged to this card when you click the <b>Pay ' + money(a.total) + ' Now</b> button below.</p>';
+      }
       box.innerHTML = '<p class="cof-t">Your payment card</p>'
         + cardOnFileHtml(a, true)
+        + payNote
         + '<p class="small" style="margin-top:8px;margin-bottom:0;">After adding a new card, <button type="button" class="link-quiet" onclick="location.reload()">refresh this page</button> to see it here.</p>';
     } else if(sel === 'installments' && !a.residential){
       // COMMERCIAL, no card: optional auto-billing offer
@@ -607,8 +613,6 @@
     }
     if(a.hasCard && a.cardLast4) lines.push('CARD ON FILE: ends ' + a.cardLast4 + (a.cardExp ? ', exp ' + a.cardExp : '') + '.');
     else lines.push('CLIENT HAS NO CARD ON FILE YET &mdash; card-add link shown on confirm page; office to verify before first billing run.');
-    var n = document.getElementById('note').value.trim();
-    if(n) lines.push('DETAILS: ' + n);
     lines.push('CONTACT PREFERENCE: Email.');
     var details = lines.join(' ').replace(/&mdash;/g,'—').replace(/&rsquo;/g,"'");
 
