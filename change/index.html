@@ -110,17 +110,6 @@
     <label class="radio-card"><input type="radio" name="choice" value="3"> Something else</label>
 
     <div class="section" id="sec-0">
-      <label>What would you like to adjust? <span class="opt">(check all that apply)</span></label>
-      <div class="checkgrid" id="adjustchecks">
-        <label class="checkitem"><input type="checkbox" value="Add driveway"> Add driveway</label>
-        <label class="checkitem"><input type="checkbox" value="Remove driveway"> Remove driveway</label>
-        <label class="checkitem"><input type="checkbox" value="Add walkway"> Add walkway</label>
-        <label class="checkitem"><input type="checkbox" value="Remove walkway"> Remove walkway</label>
-        <label class="checkitem"><input type="checkbox" value="Add de-icing/salting"> Add de-icing / salting</label>
-        <label class="checkitem"><input type="checkbox" value="Remove de-icing/salting"> Remove de-icing / salting</label>
-        <label class="checkitem"><input type="checkbox" value="Change visit frequency"> Change visit frequency</label>
-        <label class="checkitem"><input type="checkbox" value="Update property/access details"> Update property or access details</label>
-      </div>
       <label>Tell us what you'd like to change</label>
       <textarea id="adj-details" maxlength="900" placeholder="e.g. remove the walkway shoveling, add the back lane, we got a new gate on the side yard&hellip;"></textarea>
     </div>
@@ -137,9 +126,9 @@
     </div>
 
     <div class="section" id="sec-2">
-      <label>Reason for cancelling <span class="opt">(optional — helps us improve)</span></label>
+      <label>Reason for cancelling <span class="opt">(required)</span></label>
       <select id="cancel-reason">
-        <option value="">Prefer not to say</option>
+        <option value="">Select a reason&hellip;</option>
         <option>Moving</option>
         <option>No longer needed</option>
         <option>Price</option>
@@ -147,6 +136,10 @@
         <option>Chose another company</option>
         <option>Other</option>
       </select>
+      <div id="otherreasonwrap" style="display:none;">
+        <label>Tell us the reason <span class="opt">(required)</span></label>
+        <textarea id="cancel-other" maxlength="900" placeholder="Tell us why you&rsquo;re cancelling&hellip;"></textarea>
+      </div>
       <label>Anything you'd like us to know? <span class="opt">(optional)</span></label>
       <textarea id="cancel-note" maxlength="900" placeholder="Optional"></textarea>
       <div class="reassure">This sends your request to our office — we'll confirm your cancellation by email before it takes effect. If you've already prepaid, we'll sort out your refund when we confirm.</div>
@@ -167,7 +160,7 @@
     <p class="small" style="margin-top:14px;">Goes straight to our office — we'll follow up to confirm before anything changes.</p>
   </div>
 </div>
-<div class="card"><p class="small" style="margin:0;">Questions? Call our office at 250-489-2031.</p><div class="klfooter">
+<div class="card"><div class="klfooter">
       <div class="kf-row kf-brands">
         <span><b>Mow and Snow Land Services</b><a href="tel:2504231665">(250) 423-1665</a></span>
         <span><b>Blue Spruce Landscapes</b><a href="tel:2502782583">(250) 278-2583</a></span>
@@ -242,8 +235,8 @@
       errEl.style.display='none';
     });
   });
-  document.querySelectorAll('#adjustchecks input[type=checkbox]').forEach(function(c){
-    c.addEventListener('change', function(){ c.closest('label.checkitem').classList.toggle('checked', c.checked); });
+  document.getElementById('cancel-reason').addEventListener('change', function(){
+    document.getElementById('otherreasonwrap').style.display = (this.value === 'Other') ? 'block' : 'none';
   });
   document.querySelectorAll('input[name=payplan]').forEach(function(r){
     r.addEventListener('change', function(){
@@ -292,7 +285,8 @@
     } else if(choice === '2'){
       lines.push('REQUEST: Cancel snow season.');
       var reason = document.getElementById('cancel-reason').value;
-      if(reason) lines.push('REASON: ' + reason + '.');
+      var otherR = document.getElementById('cancel-other').value.trim();
+      lines.push('REASON: ' + reason + ((reason === 'Other' && otherR) ? ' — ' + otherR : '') + '.');
       var cn = document.getElementById('cancel-note').value.trim();
       if(cn) lines.push('DETAILS: ' + cn);
     } else {
@@ -308,8 +302,15 @@
     errEl.style.display='none';
     var btn = this;
     if(choice === null){ showErr('Please choose what you\'d like to do.'); return; }
-    if(choice === '0' && !document.getElementById('adj-details').value.trim() && !document.querySelector('#adjustchecks input:checked')){
-      showErr('Tell us what you\'d like to adjust — check an option or add a note below.'); return;
+    if(choice === '0' && !document.getElementById('adj-details').value.trim()){
+      showErr('Tell us what you\'d like to change.'); return;
+    }
+    if(choice === '2'){
+      var creason = document.getElementById('cancel-reason').value;
+      if(!creason){ showErr('Please select a reason for cancelling.'); return; }
+      if(creason === 'Other' && !document.getElementById('cancel-other').value.trim()){
+        showErr('Please tell us the reason — the reason field is required.'); return;
+      }
     }
     if(choice === '3' && !document.getElementById('other-details').value.trim()){
       showErr('Tell us what you need.'); return;
