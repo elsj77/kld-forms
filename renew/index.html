@@ -29,9 +29,10 @@
   #rc-installments.checked{border-color:#2563eb;background:#eff6ff;}
   #rc-prepay.checked{border-color:#16a34a;background:#f0faf3;}
   .radio-card input{margin-right:10px;vertical-align:-2px;}
-  .btn{background-color:#16a34a;color:#fff;padding:15px 32px;border:none;border-radius:8px;font-size:17px;font-weight:700;cursor:pointer;margin-top:22px;width:100%;}
-  .btn:hover{background-color:#15803d;}
-  .btn[disabled]{background-color:#a7d7b9;cursor:wait;}
+  .btn{background-color:#16a34a;color:#fff;padding:14px 24px;border:none;border-radius:10px;font-size:15.5px;font-weight:700;cursor:pointer;margin-top:18px;width:100%;box-shadow:0 1px 2px rgba(22,163,74,.35),inset 0 1px 0 rgba(255,255,255,.18);transition:background-color .15s ease,box-shadow .15s ease,transform .05s ease;}
+  .btn:hover{background-color:#15803d;box-shadow:0 2px 6px rgba(22,163,74,.4);}
+  .btn:active{transform:translateY(1px);}
+  .btn[disabled]{background-color:#a7d7b9;cursor:wait;box-shadow:none;transform:none;}
   .btn-inline{display:inline-block;background-color:#16a34a;color:#fff;padding:11px 22px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;}
   .btn-inline:hover{background-color:#15803d;}
   .link-quiet{display:inline-block;margin-top:10px;font-size:13px;color:#2563eb;text-decoration:underline;cursor:pointer;background:none;border:none;font-family:inherit;padding:0;}
@@ -163,7 +164,7 @@
     <div class="cofbox" id="cofbox" style="display:none;"></div>
     <div id="payconfirm" style="display:none;"></div>
     <p class="terms" id="termsline" style="display:none;"></p>
-    <button class="btn" id="submitbtn">Confirm My Renewal On Monthly Installments &nbsp;&rarr;</button>
+    <button class="btn" id="submitbtn">Confirm My Renewal &nbsp;&rarr;</button>
     <p class="small" id="footnote" style="margin-top:14px;">Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your season automatically on your season start date to ensure you don&rsquo;t miss out on services. Need to change or cancel instead? Just <a href="../change/?t=PLACEHOLDER">click here</a>.</p>
   </div>
 </div>
@@ -283,7 +284,7 @@
     document.getElementById('payhead').textContent = isRes ? 'How would you like to pay for your season?' : 'How would you like to handle your billing?';
     document.getElementById('inst-head').textContent = isRes ? 'Monthly installments ' : 'Monthly invoicing ';
     document.getElementById('inst-dash').textContent = isRes ? '' : '\u2014 no card required';
-    document.getElementById('submitbtn').innerHTML = isRes ? 'Confirm My Renewal On Monthly Installments &nbsp;&rarr;' : 'Accept My Proposal &nbsp;&rarr;';
+    document.getElementById('submitbtn').innerHTML = isRes ? 'Confirm My Renewal &nbsp;&rarr;' : 'Accept My Proposal &nbsp;&rarr;';
     window.footDefault = null;
     if(isRes){
       document.getElementById('footnote').innerHTML = 'Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your season automatically on ' + startLong() + ' to ensure you don&rsquo;t miss out on services.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
@@ -399,7 +400,7 @@
     if(blocked){ btn.disabled = true; btn.innerHTML = 'Add a Card Above to Confirm'; }
     else if((btn.disabled || wasPay) && btn.dataset.busy !== '1'){
       btn.disabled = false;
-      btn.innerHTML = ((window.acct||{}).residential === false) ? 'Accept My Proposal &nbsp;&rarr;' : 'Confirm My Renewal On Monthly Installments &nbsp;&rarr;';
+      btn.innerHTML = ((window.acct||{}).residential === false) ? 'Accept My Proposal &nbsp;&rarr;' : 'Confirm My Renewal &nbsp;&rarr;';
     }
   }
 
@@ -411,7 +412,7 @@
     btn.dataset.paymode = (a.chargeable && a.total) ? 'charge' : 'hosted';
     btn.disabled = false;
     if(btn.dataset.paymode === 'charge'){
-      btn.innerHTML = 'Pay ' + money(a.total) + ' Now &mdash; Charge Card &bull;&bull;&bull;&bull; ' + esc(a.cardLast4 || '') + ' &rarr;';
+      btn.innerHTML = 'Pay ' + money(a.total) + ' Now &nbsp;&rarr;';
     } else {
       btn.innerHTML = 'Pay ' + (a.total ? money(a.total) + ' ' : '') + 'Now &mdash; Secure Payment Page &rarr;';
     }
