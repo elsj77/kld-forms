@@ -67,20 +67,22 @@
   .btn-inline:hover{background-color:#15803d;}
   .reassure-line{margin-top:14px;font-size:13.5px;color:#3d5a47;background:#f0faf3;border:1px solid #bcd9c6;border-radius:10px;padding:12px 14px;font-weight:600;}
   .reassure{font-size:13px;color:#67727e;background:#f0f7f2;border:1px solid #d5e9da;border-radius:8px;padding:10px 12px;margin-top:12px;}
-  .klfooter{border-top:1px solid #e1ecf2;padding-top:14px;margin-top:14px;text-align:center;}
-  .kf-row{display:flex;justify-content:center;align-items:stretch;flex-wrap:wrap;margin:0;}
-  .kf-brands>span,.kf-offices>span{flex:1 1 0;min-width:0;padding:0 10px;}
+  .klfooter{border-top:1px solid #e1ecf2;padding-top:16px;margin-top:16px;text-align:center;}
+  .kf-row{display:flex;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin:0;}
+  .kf-brands>span,.kf-offices>span{flex:1 1 0;min-width:150px;padding:0 10px;box-sizing:border-box;overflow-wrap:anywhere;}
   .kf-brands>span+span,.kf-offices>span+span{border-left:1px solid #d6e4ed;}
-  .kf-brands b{display:block;color:#0b5e8a;font-size:13px;font-weight:700;line-height:1.4;margin-bottom:4px;white-space:nowrap;}
-  .kf-brands a{color:#0088cc;text-decoration:none;font-weight:600;}
-  .kf-offices{margin-top:14px;}
-  .kf-offices b{display:block;color:#1e293b;font-size:13px;font-weight:700;margin-bottom:4px;}
-  .kf-offices i{font-style:normal;color:#64748b;font-size:12.5px;line-height:1.4;}
-  .kf-sites{margin-top:14px;padding-top:14px;border-top:1px solid #e1ecf2;}
-  .kf-sites a{flex:1 1 0;min-width:0;padding:0 10px;color:#0088cc;text-decoration:none;font-weight:600;white-space:nowrap;}
-  @media(max-width:560px){
+  .kf-brands b{display:block;color:#0b5e8a;font-size:12.5px;font-weight:700;line-height:1.35;margin-bottom:4px;}
+  .kf-brands a{color:#0088cc;text-decoration:none;font-weight:600;font-size:12.5px;}
+  .kf-offices{margin-top:16px;}
+  .kf-offices b{display:block;color:#1e293b;font-size:12.5px;font-weight:700;margin-bottom:4px;}
+  .kf-offices i{font-style:normal;color:#64748b;font-size:12px;line-height:1.5;}
+  .kf-sites{margin-top:16px;padding-top:14px;border-top:1px solid #e1ecf2;}
+  .kf-sites a{flex:1 1 0;min-width:150px;padding:0 10px;box-sizing:border-box;color:#0088cc;text-decoration:none;font-weight:600;font-size:12.5px;overflow-wrap:anywhere;}
+  @media(max-width:520px){
+    .kf-brands>span,.kf-offices>span,.kf-sites a{flex:1 1 100%;}
     .kf-brands>span+span,.kf-offices>span+span{border-left:none;border-top:1px solid #d6e4ed;padding-top:12px;margin-top:12px;}
-    .kf-brands b{white-space:normal;}
+    .kf-sites{flex-direction:column;gap:8px;}
+    .kf-sites a{padding:0;}
   }
 </style>
 </head><body><div class="wrap">
