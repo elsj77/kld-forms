@@ -163,7 +163,7 @@
     <div id="payconfirm" style="display:none;"></div>
     <p class="terms" id="termsline" style="display:none;"></p>
     <button class="btn" id="submitbtn">Confirm My Renewal On Monthly Installments &nbsp;&rarr;</button>
-    <p class="small" id="footnote" style="margin-top:14px;">Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your season automatically on your season start date to ensure you don&rsquo;t miss out on services.</p>
+    <p class="small" id="footnote" style="margin-top:14px;">Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your season automatically on your season start date to ensure you don&rsquo;t miss out on services. Need to change or cancel instead? Just <a href="../change/?t=PLACEHOLDER">click here</a>.</p>
   </div>
 </div>
 <div class="card"><p class="small" style="margin:0;">Need to change or cancel instead? Just <a href="../change/?t=PLACEHOLDER" id="changelink">click here</a>.</p><div class="klfooter">
@@ -283,7 +283,7 @@
     document.getElementById('submitbtn').innerHTML = isRes ? 'Confirm My Renewal On Monthly Installments &nbsp;&rarr;' : 'Accept My Proposal &nbsp;&rarr;';
     window.footDefault = null;
     if(isRes){
-      document.getElementById('footnote').innerHTML = 'Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your season automatically on ' + startLong() + ' to ensure you don&rsquo;t miss out on services.';
+      document.getElementById('footnote').innerHTML = 'Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your season automatically on ' + startLong() + ' to ensure you don&rsquo;t miss out on services.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
       window.footDefault = document.getElementById('footnote').innerHTML;
       document.getElementById('termsline').innerHTML = 'By confirming your renewal, you agree to our <a href="' + TC_RES + '" target="_blank" rel="noopener">Residential Snow Terms &amp; Conditions</a>.';
     } else {
@@ -413,7 +413,7 @@
       btn.innerHTML = 'Pay ' + (a.total ? money(a.total) + ' ' : '') + 'Now &mdash; Secure Payment Page &rarr;';
     }
     if(window.footDefault !== undefined && a.residential !== false){
-      document.getElementById('footnote').innerHTML = 'Your renewal is confirmed the moment your payment goes through &mdash; we&rsquo;ll email your receipt. Prefer monthly installments instead? Just pick that option above.';
+      document.getElementById('footnote').innerHTML = 'Your renewal is confirmed the moment your payment goes through &mdash; we&rsquo;ll email your receipt. Prefer monthly installments instead? Just pick that option above.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
     }
   }
 
@@ -515,8 +515,7 @@
       var sched = (a.installments && a.monthly && a.total) ? schedHtml(a.installments, a.monthly, a.total) : '';
       if(a.hasCard){
         rci.classList.remove('warn'); stopPoll();
-        box.innerHTML = sched
-          + '<div class="reassure-line">&#10003; You&rsquo;re all set &mdash; we&rsquo;ll run your installments on your card on file, starting ' + startLong() + '.</div>';
+        box.innerHTML = sched;
         updateSubmitState(false);
       } else {
         rci.classList.add('warn');
@@ -553,9 +552,7 @@
     if(a.chargeable && a.total){
       hosted.style.display='none';
       onfile.style.display='block';
-      onfile.innerHTML = '<div class="paycard">'
-        + '<p style="margin-bottom:0;">Press <b>Pay ' + money(a.total) + ' Now</b> at the bottom of this page to charge your card on file for the full season &mdash; that payment confirms your renewal.</p>'
-        + '</div>';
+      onfile.innerHTML = '';
     } else {
       hosted.style.display='block';
       onfile.style.display='none';
