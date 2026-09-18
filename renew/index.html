@@ -252,8 +252,11 @@
     rows.forEach(function(r){
       out += '<div class="s-r' + (r.isLast ? ' last' : '') + '"><span>' + esc(r.label) + '</span><span class="amt">' + money(r.amt) + (r.isLast ? ' (final payment)' : '') + '</span></div>';
     });
-    if(isCom) out += (n === 1) ? '<div class="s-note">Single invoice &mdash; payable by EFT, e-transfer, or cheque.</div>'
-      : '<div class="s-note">Invoices are emailed monthly, payable by EFT, e-transfer, or cheque.</div>';
+    if(isCom){
+      out += (n === 1) ? '<div class="s-note">Single invoice &mdash; payable by EFT, e-transfer, or cheque.</div>'
+        : '<div class="s-note">Invoices are emailed monthly, payable by EFT, e-transfer, or cheque.</div>';
+      out += '<div class="s-note">EFT bank details on request &middot; e-transfer: <a href="mailto:accounts@kootenaylawndoctor.com" style="color:#2563eb;">accounts@kootenaylawndoctor.com</a> &middot; cheque by mail: 564 Industrial Rd B, Cranbrook, BC V1C 2Z5</div>';
+    }
     else if(n === 1) out += '<div class="s-note">Single payment plan.</div>';
     else out += '<div class="s-note">Charged automatically to your card on file on ' + billDay() + ' of each month.</div>';
     out += '</div>';
@@ -546,6 +549,7 @@
       // COMMERCIAL: monthly invoicing — no card required; card = optional auto-billing
       rci.classList.remove('warn'); stopPoll();
       box.innerHTML = (a.installments && a.monthly && a.total) ? schedHtml(a.installments, a.monthly, a.total, true) : '';
+      box.innerHTML += '<p class="small" style="margin:10px 2px 0 2px;">Crews deploy automatically when your service threshold is met (typically 2&Prime; / 5 cm of snow) or when freezing precipitation is detected.</p>';
       updateSubmitState(false);
     } else if(sel === 'prepay') {
       rci.classList.remove('warn'); stopPoll();
