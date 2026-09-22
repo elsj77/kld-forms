@@ -99,7 +99,11 @@
   .svc .s-r:last-child{border-bottom:none;}
   .svc .s-l{min-width:0;}
   .svc .s-n{font-weight:700;font-size:14px;}
-  .svc .s-d{color:#64748b;font-size:12.5px;margin-top:2px;}
+  .svc .s-d{color:#475569;font-size:12.5px;line-height:1.55;margin-top:5px;white-space:pre-line;overflow-wrap:anywhere;}
+  .svc .s-d p,.svc .s-d div{margin:0 0 6px;}
+  .svc .s-d p:last-child,.svc .s-d div:last-child{margin-bottom:0;}
+  .svc .s-d ul,.svc .s-d ol{margin:4px 0 6px;padding-left:20px;white-space:normal;}
+  .svc .s-d li{margin:2px 0;}
   .svc .s-r2{color:#0f2338;white-space:nowrap;text-align:right;}
   .svc .s-m{display:block;color:#8a94a0;font-size:11.5px;font-weight:400;}
   .svc .s-sum{background:#f8fafc;border-top:1px solid #dfe6ec;padding:9px 14px;font-size:13px;color:#475569;}
@@ -207,6 +211,34 @@
   var errEl = document.getElementById('err');
 
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  // SAP estimate descriptions can be rich text, sometimes HTML-entity encoded by the API.
+  // Build a fresh, attribute-free allowlisted tree; never inject source markup directly.
+  function serviceDescriptionHtml(input){
+    var raw = String(input || '');
+    var parsed = new DOMParser().parseFromString(raw, 'text/html');
+    for(var depth=0; depth<3; depth++){
+      if(parsed.body.querySelector('*')) break;
+      var decoded = parsed.body.textContent || '';
+      if(decoded === raw || !/(?:&(?:amp;)?(?:lt|gt|#\d+|#x[0-9a-f]+);|<\/?[a-z][^>]*>)/i.test(decoded)) break;
+      raw = decoded;
+      parsed = new DOMParser().parseFromString(raw, 'text/html');
+    }
+    var allowed = {p:1,div:1,br:1,ul:1,ol:1,li:1,strong:1,b:1,em:1,i:1,u:1};
+    var discard = {script:1,style:1,iframe:1,svg:1,math:1,object:1,embed:1,form:1,template:1};
+    function clean(node){
+      if(node.nodeType === 3) return document.createTextNode(node.nodeValue);
+      var out = document.createDocumentFragment();
+      if(node.nodeType !== 1) return out;
+      var tag = node.tagName.toLowerCase();
+      if(discard[tag]) return out;
+      var target = allowed[tag] ? document.createElement(tag) : out;
+      Array.from(node.childNodes).forEach(function(child){ target.appendChild(clean(child)); });
+      return target;
+    }
+    var safe = document.createElement('div');
+    Array.from(parsed.body.childNodes).forEach(function(node){ safe.appendChild(clean(node)); });
+    return safe.innerHTML;
+  }
   function money(n){ return '$' + (Number(n)||0).toFixed(2); }
   function fail(msg){
     formwrap.style.display='none';
@@ -313,7 +345,7 @@
       a.items.forEach(function(it){
         rows += '<div class="s-r"><div class="s-l">'
           + '<div class="s-n">' + esc(it.name || 'Service') + '</div>'
-          + (it.desc ? '<div class="s-d">' + esc(it.desc) + '</div>' : '')
+          + (it.desc ? '<div class="s-d">' + serviceDescriptionHtml(it.desc) + '</div>' : '')
           + '</div><div class="s-r2"><b>' + money(it.total) + '</b>'
           + '<span class="s-m">' + (it.qty ? money(it.rate) + ' &times; ' + it.qty + (it.qty > 1 ? ' visits' : ' visit') : money(it.rate)) + '</span>'
           + '</div></div>';
