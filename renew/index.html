@@ -301,6 +301,7 @@
         window.acct.chargeable = !!p.chargeable;
         if(p.cardLast4){ window.acct.cardLast4 = p.cardLast4; window.acct.cardExp = p.cardExp; window.acct.hasCard = true; }
         if(p.cardBrand) window.acct.cardBrand = p.cardBrand;
+        if(p.depthTrigger) window.acct.depthTrigger = String(p.depthTrigger).trim();
       }
     }).catch(function(){ /* payment lookup optional — page still works without it */ });
   }).then(function(){
@@ -308,6 +309,16 @@
     // ── version: residential vs commercial (auto from estimate doc; ?t= overrides) ──
     var isRes = forcedT === 'commercial' ? false : (forcedT === 'residential' ? true : (a.residential !== false));
     a.residential = isRes; window.acct = a;
+    // ── per-visit quotes (installments === 1): pay-as-you-go terms (Ethan, Sept 21 2026) ──
+    // Quoted per-visit instead of equal monthly installments or a season prepay.
+    // Residential: PAYG with card-on-file autocharge REQUIRED. Commercial/strata: per-visit invoicing, no card needed.
+    var perVisit = (a.installments === 1);
+    a.perVisit = perVisit;
+    // office-approved exception: invoiced PAYG without a card (Renewal Type pre-set 'Residential Pay As You Go - No Card Required')
+    var paygInv = (a.payg_invoiced === true);
+    a.paygInv = paygInv;
+    var perVisitRates = (a.items || []).filter(function(it){ return it.rate > 0; })
+      .map(function(it){ return money(it.rate) + ' per ' + esc(it.name || 'visit'); }).join(', ');
 
     // headline / section / label copy
     document.getElementById('maintitle').textContent = isRes ? 'Confirm Your Snow Season' : 'Accept Your Snow Season Proposal';
@@ -317,7 +328,9 @@
     document.getElementById('submitbtn').innerHTML = isRes ? 'Confirm My Renewal &nbsp;&rarr;' : 'Accept My Proposal &nbsp;&rarr;';
     window.footDefault = null;
     if(isRes){
-      document.getElementById('footnote').innerHTML = 'Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your season automatically on ' + startLong() + ' to ensure you don&rsquo;t miss out on services.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
+      document.getElementById('footnote').innerHTML = perVisit
+        ? 'Your renewal is confirmed the moment you click the button &mdash; and you&rsquo;re only charged when service visits happen. Prefer to think about it? Doing nothing also renews your season automatically on ' + startLong() + ' so you don&rsquo;t miss out on services.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.'
+        : 'Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your season automatically on ' + startLong() + ' to ensure you don&rsquo;t miss out on services.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
       window.footDefault = document.getElementById('footnote').innerHTML;
       document.getElementById('termsline').innerHTML = 'By confirming your renewal, you agree to our <a href="' + TC_RES + '" target="_blank" rel="noopener">Residential Snow Terms &amp; Conditions</a>.';
     } else {
@@ -327,7 +340,16 @@
     }
     document.getElementById('termsline').style.display = 'block';
 
-    if(isRes){
+    if(perVisit){
+      document.getElementById('rc-prepay').style.display = 'none';
+      document.getElementById('prepaybox').style.display = 'none';
+      document.getElementById('payhead').textContent = isRes ? 'How your pay-as-you-go billing works' : 'How your per-visit billing works';
+      document.getElementById('inst-head').innerHTML = isRes ? 'Pay as you go &mdash; billed per visit ' : 'Per-visit invoicing ';
+      document.getElementById('inst-dash').textContent = (isRes && !paygInv) ? '' : '\u2014 no card required';
+      document.getElementById('instopt').innerHTML = (isRes && !paygInv)
+        ? 'You&rsquo;re charged <b>only for visits performed</b>' + (perVisitRates ? ' &mdash; ' + perVisitRates : '') + ' &mdash; billed automatically to your card on file after each visit.'
+        : 'We invoice you <b>only for visits performed</b>' + (perVisitRates ? ' &mdash; ' + perVisitRates : '') + ' &mdash; payable by e-transfer or cheque. No card needed to accept.';
+    } else if(isRes){
       var cardBit = (a.hasCard && a.cardLast4) ? ' (&bull;&bull;&bull;&bull; ' + esc(a.cardLast4) + (a.cardExp ? ', expires ' + esc(a.cardExp) : '') + ')' : '';
       document.getElementById('instopt').innerHTML = (a.installments && a.installments > 1 && a.monthly)
         ? a.installments + ' equal monthly installments of <b>' + money(a.monthly) + '</b> &mdash; billed to your card on file' + cardBit + ' automatically on ' + billDay() + ' of each month.'
@@ -350,12 +372,15 @@
           + '<span class="s-m">' + (it.qty ? money(it.rate) + ' &times; ' + it.qty + (it.qty > 1 ? ' visits' : ' visit') : money(it.rate)) + '</span>'
           + '</div></div>';
       });
+      var trig = a.depthTrigger
+        ? '<div style="font-size:12.5px;color:#475569;padding:10px 14px;border-bottom:1px solid #eef1f5;background:#f8fafc;">Snow services on your route are automatically triggered at <b>' + esc(a.depthTrigger) + '</b> of snowfall.</div>'
+        : '';
       var sum = '<div class="s-sum">'
         + '<div class="row"><span>Season subtotal</span><span>' + money(a.subtotal || a.total) + '</span></div>'
         + (a.tax ? '<div class="row"><span>GST</span><span>' + money(a.tax) + '</span></div>' : '')
         + '<div class="row grand"><span>Total season cost</span><span>' + money(a.total) + '</span></div>'
         + '</div>';
-      svc.innerHTML = '<div class="s-t">What&rsquo;s included in your season</div>' + rows + sum;
+      svc.innerHTML = '<div class="s-t">What&rsquo;s included in your season</div>' + rows + trig + sum;
       svc.style.display = 'block';
     }
 
@@ -502,11 +527,22 @@
     var a = window.acct || {};
     var sel = (document.querySelector('input[name=payplan]:checked')||{}).value;
     var cardUrl = 'https://card.kootenaylawndoctor.com/' + (qq ? ('?q=' + encodeURIComponent(qq)) : ('?t=' + encodeURIComponent(e)));
-    if(sel === 'installments' && a.residential && !a.hasCard){
+    if(sel === 'installments' && a.residential && a.perVisit && a.paygInv){
+      // office-approved invoiced PAYG: card optional
+      box.style.display = 'block';
+      box.className = 'cofbox';
+      box.innerHTML = '<p class="cof-t">Optional &mdash; automatic card billing</p>'
+        + '<p style="margin-bottom:10px;">Your default is <b>invoiced per visit</b> (pay by e-transfer or cheque). If you&rsquo;d rather each visit be charged to a card automatically, add one here:</p>'
+        + '<a class="btn-inline" href="' + cardUrl + '" target="_blank" rel="noopener">Add a Card for Auto-Billing &rarr;</a>'
+        + '<p class="small" style="margin-top:10px;margin-bottom:0;">No card is needed to confirm your renewal &mdash; invoiced terms are perfectly fine.</p>';
+    } else if(sel === 'installments' && a.residential && !a.hasCard){
       // required-card state (red variant) with add-card CTA + live re-check
       box.style.display = 'block';
       box.className = 'cofbox need';
-      box.innerHTML = '<p class="cof-t">Card required for monthly installments</p>'
+      box.innerHTML = a.perVisit
+        ? '<p class="cof-t">Card required for pay-as-you-go billing</p>'
+          + '<p style="margin-bottom:10px;">Each completed visit is billed automatically to your card &mdash; we can&rsquo;t set that up until a card is on file. Add one now (bank-grade secure, about 2 minutes):</p>'
+        : '<p class="cof-t">Card required for monthly installments</p>'
         + '<p style="margin-bottom:10px;">Your card is billed automatically on ' + billDay() + ' of each month &mdash; we can&rsquo;t set that up until a card is on file. Add one now (bank-grade secure, about 2 minutes):</p>'
         + '<a class="btn-inline" href="' + cardUrl + '" target="_blank" rel="noopener">Add / Update Card &rarr;</a>'
         + '<div style="margin-top:10px;"><button type="button" class="link-quiet" id="checkcardbtn">I&rsquo;ve added my card &mdash; check again</button></div>'
@@ -561,7 +597,25 @@
     if(a.installments && a.monthly){ document.getElementById('instamt').textContent = '\u2014 ' + (a.installments === 1 ? money(a.monthly) : a.installments + ' equal monthly payments of ' + money(a.monthly)) + ' '; }
     if(a.total){ document.getElementById('prepayamt').textContent = '\u2014 ' + money(a.total) + ' '; }
     renderCofBox();
-    if(sel === 'installments' && a.residential){
+    if(sel === 'installments' && a.residential && a.perVisit && a.paygInv && !a.hasCard){
+      // office-approved invoiced PAYG: no card wall
+      rci.classList.remove('warn'); stopPoll();
+      box.innerHTML = '<div class="sched"><div class="s-t">How you&rsquo;ll be billed</div>'
+        + '<div class="s-note" style="margin-top:2px;">Each completed visit is invoiced' + (perVisitRates ? ' at ' + perVisitRates : '') + ' &mdash; payable by e-transfer or cheque. No invoices unless service happens. (Add a card anytime if you&rsquo;d prefer automatic billing.)</div></div>';
+      updateSubmitState(false);
+    } else if(sel === 'installments' && a.residential && a.perVisit){
+      if(a.hasCard){
+        rci.classList.remove('warn'); stopPoll();
+        box.innerHTML = '<div class="sched"><div class="s-t">How you&rsquo;ll be billed</div>'
+          + '<div class="s-note" style="margin-top:2px;">Each completed visit is charged automatically to your card on file' + (perVisitRates ? ' at ' + perVisitRates : '') + ' &mdash; no charges unless service happens.</div></div>';
+        updateSubmitState(false);
+      } else {
+        rci.classList.add('warn');
+        box.innerHTML = '';
+        startPoll();
+        updateSubmitState(true);
+      }
+    } else if(sel === 'installments' && a.residential){
       var sched = (a.installments && a.monthly && a.total) ? schedHtml(a.installments, a.monthly, a.total) : '';
       if(a.hasCard){
         rci.classList.remove('warn'); stopPoll();
@@ -574,9 +628,12 @@
         updateSubmitState(true);
       }
     } else if(sel === 'installments' && !a.residential) {
-      // COMMERCIAL: monthly invoicing — no card required; card = optional auto-billing
+      // COMMERCIAL: invoicing — no card required; card = optional auto-billing
       rci.classList.remove('warn'); stopPoll();
-      box.innerHTML = (a.installments && a.monthly && a.total) ? schedHtml(a.installments, a.monthly, a.total, true) : '';
+      box.innerHTML = a.perVisit
+        ? '<div class="sched"><div class="s-t">How you&rsquo;ll be billed</div>'
+          + '<div class="s-note" style="margin-top:2px;">Each completed visit is invoiced' + (perVisitRates ? ' at ' + perVisitRates : '') + ' &mdash; payable by EFT, e-transfer, or cheque. No invoices unless service happens.</div></div>'
+        : ((a.installments && a.monthly && a.total) ? schedHtml(a.installments, a.monthly, a.total, true) : '');
       box.innerHTML += '<p class="small" style="margin:10px 2px 0 2px;">Crews deploy automatically when your service threshold is met (typically 2&Prime; / 5 cm of snow) or when freezing precipitation is detected.</p>';
       updateSubmitState(false);
     } else if(sel === 'prepay') {
@@ -630,22 +687,36 @@
       return;
     }
     var a = window.acct || {};
-    if(sel === 'installments' && a.residential && !a.hasCard){
-      showErr('A card saved on file is required for monthly installments. Please add your card above, or choose prepay instead.');
+    if(sel === 'installments' && a.residential && !a.hasCard && !a.paygInv){
+      showErr(a.perVisit
+        ? 'A card saved on file is required for pay-as-you-go billing. Please add your card above, then confirm your renewal.'
+        : 'A card saved on file is required for monthly installments. Please add your card above, or choose prepay instead.');
       return;
     }
     var first = (a.first||'').trim(), last = (a.last||'').trim(), email = (a.email||'').trim();
     var lines;
-    if(a.residential){
+    if(a.residential && a.perVisit && a.paygInv){
+      lines = ['REQUEST: Change payment plan.', 'PREFERRED: Pay-as-you-go per-visit billing on INVOICED terms (office-approved, no card on file).',
+               'RENEWAL CONFIRMED by client via pay-as-you-go (per-visit, invoiced). (Confirmed from renewal email.)'];
+      if(perVisitRates) lines.push('PER-VISIT RATES: ' + perVisitRates.replace(/&mdash;/g,'-') + '.');
+    } else if(a.residential && a.perVisit){
+      lines = ['REQUEST: Change payment plan.', 'PREFERRED: Pay-as-you-go per-visit billing with card-on-file autocharge.',
+               'RENEWAL CONFIRMED by client via pay-as-you-go (per-visit, card autocharge). (Confirmed from renewal email.)'];
+      if(perVisitRates) lines.push('PER-VISIT RATES: ' + perVisitRates.replace(/&mdash;/g,'-') + '.');
+    } else if(a.residential){
       lines = ['REQUEST: Change payment plan.', 'PREFERRED: Installments with a card on file.',
                'RENEWAL CONFIRMED by client via installment plan &mdash; set up monthly card billing. (Confirmed from renewal email.)'];
+    } else if(a.perVisit){
+      lines = ['REQUEST: Commercial snow proposal ACCEPTED by client.', 'BILLING: Per-visit INVOICE terms (EFT / e-transfer / cheque) &mdash; no card required; office to countersign and confirm start date.',
+               'RENEWAL CONFIRMED by client via pay-as-you-go (per-visit, invoiced).'];
+      if(perVisitRates) lines.push('PER-VISIT RATES: ' + perVisitRates.replace(/&mdash;/g,'-') + '.');
     } else {
       lines = ['REQUEST: Commercial snow proposal ACCEPTED by client.', 'BILLING: Monthly INVOICE terms (EFT / e-transfer / cheque) &mdash; no auto-renew; office to countersign and confirm start date.'];
       if(a.hasCard && a.cardLast4) lines.push('CARD ON FILE ends ' + a.cardLast4 + ' &mdash; client may prefer automatic monthly billing; office to confirm billing method.');
       else lines.push('NO CARD ON FILE &mdash; invoicing terms.');
       if(a.installments && a.monthly && a.installments > 1) lines.push('PLAN: ' + a.installments + ' invoices of $' + Number(a.monthly).toFixed(2) + ' starting ' + startShort() + '.');
     }
-    if(a.installments && a.monthly){
+    if(a.installments && a.monthly && !a.perVisit){
       lines.push('MONTHLY PLAN: ' + a.installments + ' installments of $' + Number(a.monthly).toFixed(2) + ', billed on ' + billDay() + ' of each month starting ' + startLong() + '.');
     }
     if(a.hasCard && a.cardLast4) lines.push('CARD ON FILE: ends ' + a.cardLast4 + (a.cardExp ? ', exp ' + a.cardExp : '') + '.');
@@ -665,12 +736,26 @@
         if(j.ok){
           formwrap.style.display='none'; content.style.display='block';
           var cardMsg, headMsg;
-          if(a.residential){
+          if(a.residential && a.perVisit && a.paygInv && !a.hasCard){
+            headMsg = '<h1>You&rsquo;re All Set &mdash; Renewal Confirmed</h1><p><span class="ok">&#10003;</span></p>'
+              + '<p style="font-size:17px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
+            cardMsg = 'You&rsquo;re on pay-as-you-go: each completed visit is invoiced &mdash; payable by e-transfer or cheque, only when service happens.';
+          } else if(a.residential && a.perVisit){
+            headMsg = '<h1>You&rsquo;re All Set &mdash; Renewal Confirmed</h1><p><span class="ok">&#10003;</span></p>'
+              + '<p style="font-size:17px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
+            cardMsg = a.hasCard && a.cardLast4
+              ? 'You&rsquo;re on pay-as-you-go: each completed visit is charged automatically to your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + ' &mdash; only when service happens.'
+              : 'We&rsquo;ll set up your pay-as-you-go billing as soon as your card is on file — use the Add Card button from this page or the link we send you.';
+          } else if(a.residential){
             headMsg = '<h1>You&rsquo;re All Set &mdash; Renewal Confirmed</h1><p><span class="ok">&#10003;</span></p>'
               + '<p style="font-size:17px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
             cardMsg = a.hasCard && a.cardLast4
               ? 'Your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + ' will be billed in equal monthly installments starting ' + startLong() + '.'
               : 'We&rsquo;ll set up your monthly installments as soon as your card is on file — use the Add Card button from this page or the link we send you.';
+          } else if(a.perVisit){
+            headMsg = '<h1>Proposal Accepted &mdash; You&rsquo;re All Set</h1><p><span class="ok">&#10003;</span></p>'
+              + '<p style="font-size:17px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
+            cardMsg = 'You&rsquo;re on per-visit invoicing: each completed visit is invoiced &mdash; payable by EFT, e-transfer, or cheque. No invoices unless service happens. Our office will follow up with the details.';
           } else {
             headMsg = '<h1>Proposal Accepted &mdash; You&rsquo;re All Set</h1><p><span class="ok">&#10003;</span></p>'
               + '<p style="font-size:17px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
