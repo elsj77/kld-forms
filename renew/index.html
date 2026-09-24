@@ -207,6 +207,29 @@
   function billDay(){ return 'the ' + ord(S.d); }                                   // "the 15th"
   var TC_RES = 'https://terms.kootenaylawndoctor.com/terms/residential-snow-terms-and-conditions-2026-27.pdf';
   var TC_COM = 'https://terms.kootenaylawndoctor.com/terms/commercial-snow-terms-and-conditions-2026-27.pdf';
+
+  // ── season matrix (Sept 24 2026): one portal for snow / spring / summer / fall / annual ──
+  // Server sets `season` on the account (doc-driven, from the snowRenewCharge lookup);
+  // detectSeasonClient is the item-keyword fallback for cached/older payloads.
+  // Empty items → snow (legacy default).
+  var SEASON_CFG = {
+    snow:   { cap:'Snow',   name:'snow season',   tagRes:'Snow renewal #',   tagCom:'Snow proposal #' },
+    spring: { cap:'Spring', name:'spring season', tagRes:'Spring renewal #', tagCom:'Spring proposal #' },
+    summer: { cap:'Summer', name:'summer season', tagRes:'Summer renewal #', tagCom:'Summer proposal #' },
+    fall:   { cap:'Fall',   name:'fall season',   tagRes:'Fall renewal #',   tagCom:'Fall proposal #' },
+    annual: { cap:'Annual', name:'year',          tagRes:'Annual renewal #', tagCom:'Annual proposal #' }
+  };
+  function detectSeasonClient(a){
+    if(a.season && SEASON_CFG[a.season]) return a.season;
+    var its = a.items || [];
+    var txt = its.map(function(it){ return String(it.name||'')+' '+String(it.desc||''); }).join(' ');
+    var snowKw = /snow|plow|plough|sand|shovel|sweep|de-?ice|salt|windrow/i;
+    if (a.depthTrigger || snowKw.test(txt)) return 'snow';
+    if (/spring|kickstart/i.test(txt)) return 'spring';
+    if (/summer/i.test(txt)) return 'summer';
+    if (/\bfall\b|autumn|leaf/i.test(txt)) return 'fall';
+    return its.length ? 'annual' : 'snow';
+  }
   var content = document.getElementById('content');
   var formwrap = document.getElementById('formwrap');
   var errEl = document.getElementById('err');
@@ -303,20 +326,25 @@
         if(p.cardLast4){ window.acct.cardLast4 = p.cardLast4; window.acct.cardExp = p.cardExp; window.acct.hasCard = true; }
         if(p.cardBrand) window.acct.cardBrand = p.cardBrand;
         if(p.depthTrigger) window.acct.depthTrigger = String(p.depthTrigger).trim();
+        if(p.season) window.acct.season = p.season;
       }
     }).catch(function(){ /* payment lookup optional — page still works without it */ });
   }).then(function(){
     var a = window.acct || {};
-    // ── season mode: snow vs annual (Sept 24 2026 — annual renewals share this portal) ──
-    // Snow quotes carry snow-type services and/or a snow depth trigger; annual renewals
-    // (mowing/irrigation/fertilization) carry neither. Empty items → snow (legacy default).
-    var snowKw = /snow|plow|plough|sand|shovel|sweep|de-?ice|salt|windrow/i;
-    var isSnow = !!a.depthTrigger || !(a.items && a.items.length) || (a.items || []).some(function(it){
-      return snowKw.test(String(it.name || '') + ' ' + String(it.desc || ''));
-    });
-    var annual = !isSnow;
+    // ── season matrix (Sept 24 2026): snow / spring / summer / fall / annual — server-detected
+    // from the quote's selected DOCUMENT (snowRenewCharge lookup returns `season`); item-keyword
+    // fallback for older cached payloads. Empty items → snow (legacy default).
+    var season = detectSeasonClient(a);
+    a.season = season;
+    var sc = SEASON_CFG[season];
+    var annual = (season === 'annual');
     var seasonWord = annual ? 'services' : 'season';
     a.annualMode = annual;
+    // payment phrase: snow keeps the ratified "2026–27 snow season"; spring/summer/fall read
+    // "<year> <season> season" (start-year when known); annual reads "year".
+    var seasonPayPhrase = season === 'snow' ? '2026&ndash;27 snow season'
+      : (annual ? 'year' : ((a.start ? a.start.y + ' ' : '') + sc.name));
+    window.seasonPayPhrase = seasonPayPhrase;
     // ── version: residential vs commercial (auto from estimate doc; ?t= overrides) ──
     var isRes = forcedT === 'commercial' ? false : (forcedT === 'residential' ? true : (a.residential !== false));
     a.residential = isRes; window.acct = a;
@@ -334,8 +362,8 @@
     // headline / section / label copy
     document.getElementById('maintitle').textContent = annual
       ? (isRes ? 'Confirm Your Renewal' : 'Accept Your Annual Proposal')
-      : (isRes ? 'Confirm Your Snow Season' : 'Accept Your Snow Season Proposal');
-    document.title = annual ? 'Confirm Your Renewal \u2014 Kootenay Lawn Doctor' : 'Confirm Your Snow Season \u2014 Kootenay Lawn Doctor';
+      : (isRes ? 'Confirm Your ' + sc.cap + ' Season' : 'Accept Your ' + sc.cap + ' Season Proposal');
+    document.title = annual ? 'Confirm Your Renewal \u2014 Kootenay Lawn Doctor' : 'Confirm Your ' + sc.cap + ' Season \u2014 Kootenay Lawn Doctor';
     document.getElementById('payhead').textContent = annual
       ? (isRes ? 'How would you like to pay?' : 'How would you like to handle your billing?')
       : (isRes ? 'How would you like to pay for your season?' : 'How would you like to handle your billing?');
@@ -349,7 +377,7 @@
         ? 'Your renewal is confirmed the moment you click the button &mdash; and you&rsquo;re only charged when service visits happen. Prefer to think about it? Doing nothing also renews your ' + seasonWord + ' automatically on ' + startLong() + ' so you don&rsquo;t miss out on services.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.'
         : 'Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your ' + seasonWord + ' automatically on ' + startLong() + ' to ensure you don&rsquo;t miss out on services.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
       window.footDefault = document.getElementById('footnote').innerHTML;
-      document.getElementById('termsline').innerHTML = 'By confirming your renewal, you agree to our <a href="' + TC_RES + '" target="_blank" rel="noopener">' + (annual ? 'Residential Terms &amp; Conditions' : 'Residential Snow Terms &amp; Conditions') + '</a>.';
+      document.getElementById('termsline').innerHTML = 'By confirming your renewal, you agree to our <a href="' + TC_RES + '" target="_blank" rel="noopener">' + (season === 'snow' ? 'Residential Snow Terms &amp; Conditions' : 'Residential Terms &amp; Conditions') + '</a>.';
     } else {
       document.getElementById('footnote').innerHTML = 'Your acceptance confirms your ' + seasonWord + ' with us &mdash; we&rsquo;ll email a confirmation with your service details. This proposal requires your acceptance; services are not automatically renewed.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
       window.footDefault = document.getElementById('footnote').innerHTML;
@@ -389,7 +417,7 @@
           + '<span class="s-m">' + (it.qty ? money(it.rate) + ' &times; ' + it.qty + (it.qty > 1 ? ' visits' : ' visit') : money(it.rate)) + '</span>'
           + '</div></div>';
       });
-      var trig = a.depthTrigger
+      var trig = (a.depthTrigger && season === 'snow')
         ? '<div style="font-size:12px;color:#475569;padding:10px 14px;border-bottom:1px solid #eef1f5;background:#f8fafc;">Snow services on your route are automatically triggered at <b>' + esc(a.depthTrigger) + '</b> of snowfall.</div>'
         : '';
       var sum = '<div class="s-sum">'
@@ -405,7 +433,7 @@
     who.innerHTML = '<p class="lbl">' + (isRes ? 'Confirming your renewal for' : 'Accepting your proposal for') + '</p>'
       + '<div class="acct-row1">'
       + '<span class="acct-name">' + esc([a.first,a.last].filter(Boolean).join(' ')) + '</span>'
-      + '<span class="quote">' + (annual ? (isRes ? 'Annual renewal #' : 'Annual proposal #') : (isRes ? 'Snow renewal #' : 'Snow proposal #')) + esc(a.number || '') + '</span>'
+      + '<span class="quote">' + (isRes ? sc.tagRes : sc.tagCom) + esc(a.number || '') + '</span>'
       + (a.total ? '<span class="total">' + (annual ? 'Total ' : 'Season total ') + money(a.total) + '</span>' : '')
       + '</div>'
       + '<div class="acct-row2">'
@@ -500,7 +528,7 @@
     var pc = document.getElementById('payconfirm');
     pc.innerHTML = '<div class="confirmbox" style="display:block;">'
       + '<p class="c-t">Confirm your payment</p>'
-      + '<p>You\'re about to charge <b>' + money(a.total) + '</b> to your ' + (a.cardBrand ? esc(a.cardBrand) + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + '. This pays your 2026&ndash;27 snow season in full and confirms your renewal.</p>'
+      + '<p>You\'re about to charge <b>' + money(a.total) + '</b> to your ' + (a.cardBrand ? esc(a.cardBrand) + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + '. This pays your ' + (window.seasonPayPhrase || 'season') + ' in full and confirms your renewal.</p>'
       + '<div class="c-btns"><button type="button" class="btn-danger" id="confirmyes">Yes, charge my card</button>'
       + '<button type="button" class="btn-ghost" id="confirmno">Go back</button></div>'
       + '<div class="declinemsg" id="chargedecline" style="margin-top:12px;"></div>'
@@ -518,7 +546,7 @@
           formwrap.style.display='none'; content.style.display='block';
           content.innerHTML = '<h1>Paid &mdash; Season Covered</h1><p><span class="ok">&#10003;</span></p>'
             + '<p style="font-size:16px;">Thanks, ' + esc((window.acct.first||'')) + '. We charged <b>' + money(j.amount) + '</b> to your card ending in ' + esc(j.last4 || (window.acct.cardLast4||'')) + '.</p>'
-            + '<p>Your 2026&ndash;27 snow season is paid in full and your renewal is confirmed. Our office has been notified, your account is updated, and a receipt is on its way to your email.</p>'
+            + '<p>Your ' + (window.seasonPayPhrase || 'season') + ' is paid in full and your renewal is confirmed. Our office has been notified, your account is updated, and a receipt is on its way to your email.</p>'
             + '<p class="small">You can close this page. Questions? Call us at 250-489-2031.</p>';
           window.scrollTo(0,0);
         } else {
@@ -575,11 +603,11 @@
       var payNote = '';
       if(sel === 'installments' && a.residential && a.monthly){
         payNote = (a.installments === 1)
-          ? '<p class="small" style="margin-top:8px;margin-bottom:0;">Your season payment of ' + money(a.total) + ' will be billed to this card once you click the <b>Confirm My Renewal</b> button.</p>'
+          ? '<p class="small" style="margin-top:8px;margin-bottom:0;">' + (a.season === 'annual' ? 'Your annual payment of ' : 'Your season payment of ') + money(a.total) + ' will be billed to this card once you click the <b>Confirm My Renewal</b> button.</p>'
           : '<p class="small" style="margin-top:8px;margin-bottom:0;">Your monthly installments of ' + money(a.monthly) + ' will be billed to this card on ' + billDay() + ' of each month once you click the <b>Confirm My Renewal</b> button.</p>';
       } else if(sel === 'installments' && a.residential === false && a.monthly){
         payNote = (a.installments === 1)
-          ? '<p class="small" style="margin-top:8px;margin-bottom:0;">Your season payment of ' + money(a.total) + ' will be billed to this card once you click the <b>Accept My Proposal</b> button &mdash; or invoice terms if you prefer.</p>'
+          ? '<p class="small" style="margin-top:8px;margin-bottom:0;">' + (a.season === 'annual' ? 'Your annual payment of ' : 'Your season payment of ') + money(a.total) + ' will be billed to this card once you click the <b>Accept My Proposal</b> button &mdash; or invoice terms if you prefer.</p>'
           : '<p class="small" style="margin-top:8px;margin-bottom:0;">Your monthly payments of ' + money(a.monthly) + ' will be billed automatically to this card starting ' + startLong() + ' once you click the <b>Accept My Proposal</b> button &mdash; or invoice terms if you prefer.</p>';
       } else if(sel === 'prepay' && a.total){
         payNote = '<p class="small" style="margin-top:8px;margin-bottom:0;">Your prepayment of ' + money(a.total) + ' will be charged to this card when you click the <b>Pay ' + money(a.total) + ' Now</b> button below.</p>';
@@ -651,7 +679,7 @@
         ? '<div class="sched"><div class="s-t">How you&rsquo;ll be billed</div>'
           + '<div class="s-note" style="margin-top:2px;">Each completed visit is invoiced' + (perVisitRates ? ' at ' + perVisitRates : '') + ' &mdash; payable by EFT, e-transfer, or cheque. No invoices unless service happens.</div></div>'
         : ((a.installments && a.monthly && a.total) ? schedHtml(a.installments, a.monthly, a.total, true) : '');
-      box.innerHTML += '<p class="small" style="margin:10px 2px 0 2px;">Crews deploy automatically when your service threshold is met (typically 2&Prime; / 5 cm of snow) or when freezing precipitation is detected.</p>';
+      if(a.season === 'snow') box.innerHTML += '<p class="small" style="margin:10px 2px 0 2px;">Crews deploy automatically when your service threshold is met (typically 2&Prime; / 5 cm of snow) or when freezing precipitation is detected.</p>';
       updateSubmitState(false);
     } else if(sel === 'prepay') {
       rci.classList.remove('warn'); stopPoll();
@@ -724,11 +752,11 @@
       lines = ['REQUEST: Change payment plan.', 'PREFERRED: Installments with a card on file.',
                'RENEWAL CONFIRMED by client via installment plan &mdash; set up monthly card billing. (Confirmed from renewal email.)'];
     } else if(a.perVisit){
-      lines = ['REQUEST: Commercial snow proposal ACCEPTED by client.', 'BILLING: Per-visit INVOICE terms (EFT / e-transfer / cheque) &mdash; no card required; office to countersign and confirm start date.',
+      lines = ['REQUEST: Commercial ' + (a.season || 'snow') + ' proposal ACCEPTED by client.', 'BILLING: Per-visit INVOICE terms (EFT / e-transfer / cheque) &mdash; no card required; office to countersign and confirm start date.',
                'RENEWAL CONFIRMED by client via pay-as-you-go (per-visit, invoiced).'];
       if(perVisitRates) lines.push('PER-VISIT RATES: ' + perVisitRates.replace(/&mdash;/g,'-') + '.');
     } else {
-      lines = ['REQUEST: Commercial snow proposal ACCEPTED by client.', 'BILLING: Monthly INVOICE terms (EFT / e-transfer / cheque) &mdash; no auto-renew; office to countersign and confirm start date.'];
+      lines = ['REQUEST: Commercial ' + (a.season || 'snow') + ' proposal ACCEPTED by client.', 'BILLING: Monthly INVOICE terms (EFT / e-transfer / cheque) &mdash; no auto-renew; office to countersign and confirm start date.'];
       if(a.hasCard && a.cardLast4) lines.push('CARD ON FILE ends ' + a.cardLast4 + ' &mdash; client may prefer automatic monthly billing; office to confirm billing method.');
       else lines.push('NO CARD ON FILE &mdash; invoicing terms.');
       if(a.installments && a.monthly && a.installments > 1) lines.push('PLAN: ' + a.installments + ' invoices of $' + Number(a.monthly).toFixed(2) + ' starting ' + startShort() + '.');
@@ -755,30 +783,30 @@
           var cardMsg, headMsg;
           if(a.residential && a.perVisit && a.paygInv && !a.hasCard){
             headMsg = '<h1>You&rsquo;re All Set &mdash; Renewal Confirmed</h1><p><span class="ok">&#10003;</span></p>'
-              + '<p style="font-size:16px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
+              + '<p style="font-size:16px;">Thanks, ' + esc(first) + '. Your ' + (window.seasonPayPhrase || 'season') + ' is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
             cardMsg = 'You&rsquo;re on pay-as-you-go: each completed visit is invoiced &mdash; payable by e-transfer or cheque, only when service happens.';
           } else if(a.residential && a.perVisit){
             headMsg = '<h1>You&rsquo;re All Set &mdash; Renewal Confirmed</h1><p><span class="ok">&#10003;</span></p>'
-              + '<p style="font-size:16px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
+              + '<p style="font-size:16px;">Thanks, ' + esc(first) + '. Your ' + (window.seasonPayPhrase || 'season') + ' is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
             cardMsg = a.hasCard && a.cardLast4
               ? 'You&rsquo;re on pay-as-you-go: each completed visit is charged automatically to your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + ' &mdash; only when service happens.'
               : 'We&rsquo;ll set up your pay-as-you-go billing as soon as your card is on file — use the Add Card button from this page or the link we send you.';
           } else if(a.residential){
             headMsg = '<h1>You&rsquo;re All Set &mdash; Renewal Confirmed</h1><p><span class="ok">&#10003;</span></p>'
-              + '<p style="font-size:16px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
+              + '<p style="font-size:16px;">Thanks, ' + esc(first) + '. Your ' + (window.seasonPayPhrase || 'season') + ' is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
             cardMsg = a.hasCard && a.cardLast4
               ? 'Your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + ' will be billed in equal monthly installments starting ' + startLong() + '.'
               : 'We&rsquo;ll set up your monthly installments as soon as your card is on file — use the Add Card button from this page or the link we send you.';
           } else if(a.perVisit){
             headMsg = '<h1>Proposal Accepted &mdash; You&rsquo;re All Set</h1><p><span class="ok">&#10003;</span></p>'
-              + '<p style="font-size:16px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
+              + '<p style="font-size:16px;">Thanks, ' + esc(first) + '. Your ' + (window.seasonPayPhrase || 'season') + ' is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
             cardMsg = 'You&rsquo;re on per-visit invoicing: each completed visit is invoiced &mdash; payable by EFT, e-transfer, or cheque. No invoices unless service happens. Our office will follow up with the details.';
           } else {
             headMsg = '<h1>Proposal Accepted &mdash; You&rsquo;re All Set</h1><p><span class="ok">&#10003;</span></p>'
-              + '<p style="font-size:16px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
+              + '<p style="font-size:16px;">Thanks, ' + esc(first) + '. Your ' + (window.seasonPayPhrase || 'season') + ' is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
             cardMsg = a.hasCard && a.cardLast4
               ? 'We&rsquo;ll bill your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + ' in equal monthly payments starting ' + startLong() + ' &mdash; or invoice terms if you prefer; our office will confirm with you.'
-              : 'We&rsquo;ll invoice you monthly through the season, starting ' + startLong() + ' &mdash; payable by EFT, e-transfer, or cheque. Our office will follow up with the details.';
+              : 'We&rsquo;ll invoice you monthly through the ' + (a.season === 'annual' ? 'year' : 'season') + ', starting ' + startLong() + ' &mdash; payable by EFT, e-transfer, or cheque. Our office will follow up with the details.';
           }
           content.innerHTML = headMsg
             + '<p>' + cardMsg + '</p>'

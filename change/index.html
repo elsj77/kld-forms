@@ -178,6 +178,15 @@
 (function(){
   var API = 'https://doc-pro-781789de.base44.app/functions/snowChangeRequest';
   var API_PAY = 'https://doc-pro-781789de.base44.app/functions/snowRenewCharge';
+
+  // ── season matrix (Sept 24 2026): change page follows the renewal season (server-detected) ──
+  var SEASON_TAGS = {
+    snow:   { cap:'Snow',   name:'snow season',   tagRes:'Snow renewal #' },
+    spring: { cap:'Spring', name:'spring season', tagRes:'Spring renewal #' },
+    summer: { cap:'Summer', name:'summer season', tagRes:'Summer renewal #' },
+    fall:   { cap:'Fall',   name:'fall season',   tagRes:'Fall renewal #' },
+    annual: { cap:'Annual', name:'year',          tagRes:'Annual renewal #' }
+  };
   var qs = new URLSearchParams(location.search);
   var e = (qs.get('t')||'').trim(); // secure per-client portal token (Sept 17 2026)
   var eq = (qs.get('e')||'').trim(); // estimate number hint (which of this client's quotes this email is about)
@@ -211,20 +220,32 @@
         .then(function(p){
           if(p && !p.error){
             var items = p.items || [];
-            var snowKw = /snow|plow|plough|sand|shovel|sweep|de-?ice|salt|windrow/i;
-            var annual = !!(items.length && !p.depthTrigger && !items.some(function(it){
-              return snowKw.test(String(it.name || '') + ' ' + String(it.desc || ''));
-            }));
+            // server season (doc-driven) first; item-keyword fallback for older payloads
+            var season;
+            if (p.season && SEASON_TAGS[p.season]) {
+              season = p.season;
+            } else {
+              var txt = items.map(function(it){ return String(it.name||'') + ' ' + String(it.desc||''); }).join(' ');
+              var snowKw = /snow|plow|plough|sand|shovel|sweep|de-?ice|salt|windrow/i;
+              if (p.depthTrigger || snowKw.test(txt)) season = 'snow';
+              else if (/spring|kickstart/i.test(txt)) season = 'spring';
+              else if (/summer/i.test(txt)) season = 'summer';
+              else if (/\bfall\b|autumn|leaf/i.test(txt)) season = 'fall';
+              else season = items.length ? 'annual' : 'snow';
+            }
+            var st = SEASON_TAGS[season];
+            var annual = (season === 'annual');
+            window.acct.season = season;
             window.acct.annualMode = annual;
-            document.title = annual ? 'Change or Cancel Your Renewal — Kootenay Lawn Doctor' : document.title;
+            document.title = annual ? 'Change or Cancel Your Renewal — Kootenay Lawn Doctor' : 'Change or Cancel Your ' + st.cap + ' Season — Kootenay Lawn Doctor';
             var h1 = document.getElementById('maintitle');
-            if(h1) h1.textContent = annual ? 'Change or Cancel Your Renewal' : 'Change or Cancel Your Snow Season';
+            if(h1) h1.textContent = annual ? 'Change or Cancel Your Renewal' : 'Change or Cancel Your ' + st.cap + ' Season';
             var ql = document.getElementById('quotelabel');
-            if(ql) ql.textContent = (annual ? 'Annual renewal #' : 'Snow renewal #') + (window.acct.number || '');
+            if(ql) ql.textContent = st.tagRes + (window.acct.number || '');
             var tl = document.getElementById('totallabel');
             if(tl && window.acct.total) tl.textContent = (annual ? 'Total $' : 'Season total $') + Number(window.acct.total).toFixed(2);
             var cl = document.getElementById('cancellabel');
-            if(cl) cl.textContent = annual ? 'Cancel my renewal' : 'Cancel my snow season';
+            if(cl) cl.textContent = annual ? 'Cancel my renewal' : 'Cancel my ' + st.name;
             var pq = document.getElementById('payq');
             if(pq) pq.textContent = annual ? 'How would you prefer to pay for the year?' : 'How would you prefer to pay for your season?';
             var po = document.getElementById('prepayonline');
@@ -309,7 +330,8 @@
       var n = document.getElementById('pay-note').value.trim();
       if(n) lines.push('DETAILS: ' + n);
     } else if(choice === '2'){
-      lines.push('REQUEST: Cancel ' + ((window.acct || {}).annualMode ? 'renewal' : 'snow season') + '.');
+      var _s = String((window.acct || {}).season || 'snow');
+      lines.push('REQUEST: Cancel ' + ((window.acct || {}).annualMode ? 'renewal' : (SEASON_TAGS[_s] ? SEASON_TAGS[_s].name : 'snow season')) + '.');
       var reason = document.getElementById('cancel-reason').value;
       var otherR = document.getElementById('cancel-other').value.trim();
       lines.push('REASON: ' + reason + ((reason === 'Other' && otherR) ? ' — ' + otherR : '') + '.');
