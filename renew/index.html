@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Confirm Your Snow Season — Kootenay Lawn Doctor</title>
+<title>Confirm Your Renewal — Kootenay Lawn Doctor</title>
 <style>
   body{font-family:Segoe UI,Arial,sans-serif;background:#f4f6f8;margin:0;padding:24px 16px;}
   .wrap{max-width:640px;margin:0 auto;}
@@ -137,7 +137,7 @@
   <div class="pagehead">
     <img src="../logo.png" alt="Kootenay Lawn Doctor logo">
     <div>
-      <h1 id="maintitle">Confirm Your Snow Season</h1>
+      <h1 id="maintitle">Confirm Your Renewal</h1>
       <p class="pagesub">Kootenay Lawn Doctor &middot; Mow &amp; Snow &middot; Blue Spruce</p>
     </div>
   </div>
@@ -148,10 +148,10 @@
     <div class="acct" id="who" style="display:none;"></div>
     <div class="svc" id="services" style="display:none;"></div>
 
-    <h2 style="margin-top:0;" id="payhead">How would you like to pay for your season?</h2>
+    <h2 style="margin-top:0;" id="payhead">How would you like to pay?</h2>
     <label class="radio-card" id="rc-installments"><input type="radio" name="payplan" value="installments" checked> <span id="inst-head">Monthly installments </span><span class="sel-amt" id="instamt"></span><span id="inst-dash">&mdash; billed to my card on file</span><br><span class="opt" id="instopt"></span></label>
     <div id="cardprompt"></div>
-    <label class="radio-card" id="rc-prepay"><input type="radio" name="payplan" value="prepay"> Prepay the full season <span class="sel-amt" id="prepayamt"></span><span class="opt">(one single payment)</span></label>
+    <label class="radio-card" id="rc-prepay"><input type="radio" name="payplan" value="prepay"> <span id="prepayhead">Prepay the full season</span> <span class="sel-amt" id="prepayamt"></span><span class="opt">(one single payment)</span></label>
     <div class="prepaybox" id="prepaybox">
       <div id="prepayhosted">
         <p>Pay your full season in one secure payment:</p>
@@ -306,6 +306,16 @@
     }).catch(function(){ /* payment lookup optional — page still works without it */ });
   }).then(function(){
     var a = window.acct || {};
+    // ── season mode: snow vs annual (Sept 24 2026 — annual renewals share this portal) ──
+    // Snow quotes carry snow-type services and/or a snow depth trigger; annual renewals
+    // (mowing/irrigation/fertilization) carry neither. Empty items → snow (legacy default).
+    var snowKw = /snow|plow|plough|sand|shovel|sweep|de-?ice|salt|windrow/i;
+    var isSnow = !!a.depthTrigger || !(a.items && a.items.length) || (a.items || []).some(function(it){
+      return snowKw.test(String(it.name || '') + ' ' + String(it.desc || ''));
+    });
+    var annual = !isSnow;
+    var seasonWord = annual ? 'services' : 'season';
+    a.annualMode = annual;
     // ── version: residential vs commercial (auto from estimate doc; ?t= overrides) ──
     var isRes = forcedT === 'commercial' ? false : (forcedT === 'residential' ? true : (a.residential !== false));
     a.residential = isRes; window.acct = a;
@@ -321,22 +331,28 @@
       .map(function(it){ return money(it.rate) + ' per ' + esc(it.name || 'visit'); }).join(', ');
 
     // headline / section / label copy
-    document.getElementById('maintitle').textContent = isRes ? 'Confirm Your Snow Season' : 'Accept Your Snow Season Proposal';
-    document.getElementById('payhead').textContent = isRes ? 'How would you like to pay for your season?' : 'How would you like to handle your billing?';
+    document.getElementById('maintitle').textContent = annual
+      ? (isRes ? 'Confirm Your Renewal' : 'Accept Your Annual Proposal')
+      : (isRes ? 'Confirm Your Snow Season' : 'Accept Your Snow Season Proposal');
+    document.title = annual ? 'Confirm Your Renewal \u2014 Kootenay Lawn Doctor' : 'Confirm Your Snow Season \u2014 Kootenay Lawn Doctor';
+    document.getElementById('payhead').textContent = annual
+      ? (isRes ? 'How would you like to pay?' : 'How would you like to handle your billing?')
+      : (isRes ? 'How would you like to pay for your season?' : 'How would you like to handle your billing?');
+    document.getElementById('prepayhead').textContent = annual ? 'Prepay the year' : 'Prepay the full season';
     document.getElementById('inst-head').textContent = isRes ? 'Monthly installments ' : 'Monthly invoicing ';
     document.getElementById('inst-dash').textContent = isRes ? '' : '\u2014 no card required';
     document.getElementById('submitbtn').innerHTML = isRes ? 'Confirm My Renewal &nbsp;&rarr;' : 'Accept My Proposal &nbsp;&rarr;';
     window.footDefault = null;
     if(isRes){
       document.getElementById('footnote').innerHTML = perVisit
-        ? 'Your renewal is confirmed the moment you click the button &mdash; and you&rsquo;re only charged when service visits happen. Prefer to think about it? Doing nothing also renews your season automatically on ' + startLong() + ' so you don&rsquo;t miss out on services.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.'
-        : 'Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your season automatically on ' + startLong() + ' to ensure you don&rsquo;t miss out on services.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
+        ? 'Your renewal is confirmed the moment you click the button &mdash; and you&rsquo;re only charged when service visits happen. Prefer to think about it? Doing nothing also renews your ' + seasonWord + ' automatically on ' + startLong() + ' so you don&rsquo;t miss out on services.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.'
+        : 'Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your ' + seasonWord + ' automatically on ' + startLong() + ' to ensure you don&rsquo;t miss out on services.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
       window.footDefault = document.getElementById('footnote').innerHTML;
-      document.getElementById('termsline').innerHTML = 'By confirming your renewal, you agree to our <a href="' + TC_RES + '" target="_blank" rel="noopener">Residential Snow Terms &amp; Conditions</a>.';
+      document.getElementById('termsline').innerHTML = 'By confirming your renewal, you agree to our <a href="' + TC_RES + '" target="_blank" rel="noopener">' + (annual ? 'Residential Terms &amp; Conditions' : 'Residential Snow Terms &amp; Conditions') + '</a>.';
     } else {
-      document.getElementById('footnote').innerHTML = 'Your acceptance confirms your season with us &mdash; we&rsquo;ll email a confirmation with your service details. This proposal requires your acceptance; services are not automatically renewed.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
+      document.getElementById('footnote').innerHTML = 'Your acceptance confirms your ' + seasonWord + ' with us &mdash; we&rsquo;ll email a confirmation with your service details. This proposal requires your acceptance; services are not automatically renewed.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
       window.footDefault = document.getElementById('footnote').innerHTML;
-      document.getElementById('termsline').innerHTML = 'By accepting this proposal, you agree to our <a href="' + TC_COM + '" target="_blank" rel="noopener">Commercial Snow Terms &amp; Conditions</a>.';
+      document.getElementById('termsline').innerHTML = 'By accepting this proposal, you agree to our <a href="' + TC_COM + '" target="_blank" rel="noopener">' + (annual ? 'Commercial / Strata Terms &amp; Conditions' : 'Commercial Snow Terms &amp; Conditions') + '</a>.';
     }
     document.getElementById('termsline').style.display = 'block';
 
@@ -376,11 +392,11 @@
         ? '<div style="font-size:12.5px;color:#475569;padding:10px 14px;border-bottom:1px solid #eef1f5;background:#f8fafc;">Snow services on your route are automatically triggered at <b>' + esc(a.depthTrigger) + '</b> of snowfall.</div>'
         : '';
       var sum = '<div class="s-sum">'
-        + '<div class="row"><span>Season subtotal</span><span>' + money(a.subtotal || a.total) + '</span></div>'
+        + '<div class="row"><span>' + (annual ? 'Subtotal' : 'Season subtotal') + '</span><span>' + money(a.subtotal || a.total) + '</span></div>'
         + (a.tax ? '<div class="row"><span>GST</span><span>' + money(a.tax) + '</span></div>' : '')
-        + '<div class="row grand"><span>Total season cost</span><span>' + money(a.total) + '</span></div>'
+        + '<div class="row grand"><span>' + (annual ? 'Total Cost' : 'Total season cost') + '</span><span>' + money(a.total) + '</span></div>'
         + '</div>';
-      svc.innerHTML = '<div class="s-t">What&rsquo;s included in your season</div>' + rows + trig + sum;
+      svc.innerHTML = '<div class="s-t">' + (annual ? 'What&rsquo;s included in your renewal' : 'What&rsquo;s included in your season') + '</div>' + rows + trig + sum;
       svc.style.display = 'block';
     }
 
@@ -388,8 +404,8 @@
     who.innerHTML = '<p class="lbl">' + (isRes ? 'Confirming your renewal for' : 'Accepting your proposal for') + '</p>'
       + '<div class="acct-row1">'
       + '<span class="acct-name">' + esc([a.first,a.last].filter(Boolean).join(' ')) + '</span>'
-      + '<span class="quote">' + (isRes ? 'Snow renewal #' : 'Snow proposal #') + esc(a.number || '') + '</span>'
-      + (a.total ? '<span class="total">Season total ' + money(a.total) + '</span>' : '')
+      + '<span class="quote">' + (annual ? (isRes ? 'Annual renewal #' : 'Annual proposal #') : (isRes ? 'Snow renewal #' : 'Snow proposal #')) + esc(a.number || '') + '</span>'
+      + (a.total ? '<span class="total">' + (annual ? 'Total ' : 'Season total ') + money(a.total) + '</span>' : '')
       + '</div>'
       + '<div class="acct-row2">'
       + '<span class="acct-item"><span class="k">Phone</span>' + esc(a.phone || '—') + '</span>'

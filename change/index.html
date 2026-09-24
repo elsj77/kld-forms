@@ -94,7 +94,7 @@
   <div class="pagehead">
     <img src="../logo.png" alt="Kootenay Lawn Doctor logo">
     <div>
-      <h1>Change or Cancel Your Snow Season</h1>
+      <h1 id="maintitle">Change or Cancel Your Snow Season</h1>
       <p class="pagesub">Kootenay Lawn Doctor &middot; Mow &amp; Snow &middot; Blue Spruce</p>
     </div>
   </div>
@@ -107,7 +107,7 @@
     <h2 style="margin-top:0;">What would you like to do?</h2>
     <label class="radio-card"><input type="radio" name="choice" value="0"> Adjust my services <span class="opt">(add/remove a service, change frequency)</span></label>
     <label class="radio-card"><input type="radio" name="choice" value="1"> Change my payment plan</label>
-    <label class="radio-card"><input type="radio" name="choice" value="2"> Cancel my snow season</label>
+    <label class="radio-card"><input type="radio" name="choice" value="2"> <span id="cancellabel">Cancel my snow season</span></label>
     <label class="radio-card"><input type="radio" name="choice" value="3"> Something else</label>
 
     <div class="section" id="sec-0">
@@ -116,9 +116,9 @@
     </div>
 
     <div class="section" id="sec-1">
-      <label>How would you prefer to pay for your season?</label>
+      <label id="payq">How would you prefer to pay for your season?</label>
       <label class="radio-card"><input type="radio" name="payplan" value="Installments with a card on file"> Installments with a card on file<br><span class="opt">Your renewal is confirmed right away &mdash; your card is billed automatically each month. Nothing more to do.</span></label>
-      <label class="radio-card"><input type="radio" name="payplan" value="Prepay the full season online"> Prepay the full season online <span class="opt">(we'll send you the secure payment link)</span></label>
+      <label class="radio-card"><input type="radio" name="payplan" value="Prepay the full season online"> <span id="prepayonline">Prepay the full season online</span> <span class="opt">(we'll send you the secure payment link)</span></label>
       <label class="radio-card"><input type="radio" name="payplan" value="E-transfer"> E-transfer</label>
       <label class="radio-card"><input type="radio" name="payplan" value="Cheque"> Cheque</label>
       <div id="cardprompt"></div>
@@ -176,6 +176,7 @@
 <script>
 (function(){
   var API = 'https://doc-pro-781789de.base44.app/functions/snowChangeRequest';
+  var API_PAY = 'https://doc-pro-781789de.base44.app/functions/snowRenewCharge';
   var qs = new URLSearchParams(location.search);
   var e = (qs.get('t')||'').trim(); // secure per-client portal token (Sept 17 2026)
   var eq = (qs.get('e')||'').trim(); // estimate number hint (which of this client's quotes this email is about)
@@ -201,12 +202,40 @@
     .then(function(j){
       if(j.error){ fail(j.error==='not_found' ? 'We couldn\'t find your renewal quote. Please use the exact link from your renewal email, or call our office.' : 'We couldn\'t load your details right now. Please try again in a few minutes, or call our office at 250-489-2031.'); return; }
       window.acct = j;
+      // ── season mode: snow vs annual (Sept 24 2026 — annual renewals share this portal) ──
+      // Optional second lookup: service items tell us whether this is a snow season or an
+      // annual (mowing/irrigation/fert) renewal. Fails silently → keeps snow wording (legacy).
+      fetch(API_PAY, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({t:e, e:eq, q:qq, mode:'lookup'})})
+        .then(function(r){ return r.json(); })
+        .then(function(p){
+          if(p && !p.error){
+            var items = p.items || [];
+            var snowKw = /snow|plow|plough|sand|shovel|sweep|de-?ice|salt|windrow/i;
+            var annual = !!(items.length && !p.depthTrigger && !items.some(function(it){
+              return snowKw.test(String(it.name || '') + ' ' + String(it.desc || ''));
+            }));
+            window.acct.annualMode = annual;
+            document.title = annual ? 'Change or Cancel Your Renewal — Kootenay Lawn Doctor' : document.title;
+            var h1 = document.getElementById('maintitle');
+            if(h1) h1.textContent = annual ? 'Change or Cancel Your Renewal' : 'Change or Cancel Your Snow Season';
+            var ql = document.getElementById('quotelabel');
+            if(ql) ql.textContent = (annual ? 'Annual renewal #' : 'Snow renewal #') + (window.acct.number || '');
+            var tl = document.getElementById('totallabel');
+            if(tl && window.acct.total) tl.textContent = (annual ? 'Total $' : 'Season total $') + Number(window.acct.total).toFixed(2);
+            var cl = document.getElementById('cancellabel');
+            if(cl) cl.textContent = annual ? 'Cancel my renewal' : 'Cancel my snow season';
+            var pq = document.getElementById('payq');
+            if(pq) pq.textContent = annual ? 'How would you prefer to pay for the year?' : 'How would you prefer to pay for your season?';
+            var po = document.getElementById('prepayonline');
+            if(po) po.textContent = annual ? 'Prepay the year online' : 'Prepay the full season online';
+          }
+        }).catch(function(){ /* mode detection optional — keep snow wording */ });
       var who = document.getElementById('who');
       who.innerHTML = '<p class="lbl">Confirming details for</p>'
         + '<div class="acct-row1">'
         + '<span class="acct-name">' + esc([j.first,j.last].filter(Boolean).join(' ')) + '</span>'
-        + '<span class="quote">Snow renewal #' + esc(j.number || '') + '</span>'
-        + (j.total ? '<span class="total">Season total $' + Number(j.total).toFixed(2) + '</span>' : '')
+        + '<span class="quote" id="quotelabel">Snow renewal #' + esc(j.number || '') + '</span>'
+        + (j.total ? '<span class="total" id="totallabel">Season total $' + Number(j.total).toFixed(2) + '</span>' : '')
         + '</div>'
         + '<div class="acct-row2">'
         + '<span class="acct-item"><span class="k">Phone</span>' + esc(j.phone || '—') + '</span>'
@@ -250,7 +279,7 @@
       } else {
         box.innerHTML = '<div class="cardbox">'
           + '<p class="cb-t">One last thing &mdash; add your card so your installments run automatically</p>'
-          + '<p>Your season is confirmed either way, but a card on file means no invoices to chase and nothing to remember each month.</p>'
+          + '<p>Your ' + ((window.acct || {}).annualMode ? 'renewal' : 'season') + ' is confirmed either way, but a card on file means no invoices to chase and nothing to remember each month.</p>'
           + '<a class="btn-inline" href="https://card.kootenaylawndoctor.com/' + (qq ? ('?q=' + encodeURIComponent(qq)) : ('?t=' + encodeURIComponent(e))) + '" target="_blank" rel="noopener">Add / Update Card &rarr;</a>'
           + '<p style="margin-top:8px;">Bank-grade secure (Authorize.net) &middot; takes about 2 minutes.</p>'
           + '</div>';
@@ -279,7 +308,7 @@
       var n = document.getElementById('pay-note').value.trim();
       if(n) lines.push('DETAILS: ' + n);
     } else if(choice === '2'){
-      lines.push('REQUEST: Cancel snow season.');
+      lines.push('REQUEST: Cancel ' + ((window.acct || {}).annualMode ? 'renewal' : 'snow season') + '.');
       var reason = document.getElementById('cancel-reason').value;
       var otherR = document.getElementById('cancel-other').value.trim();
       lines.push('REASON: ' + reason + ((reason === 'Other' && otherR) ? ' — ' + otherR : '') + '.');
