@@ -5,31 +5,31 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Confirm Your Renewal — Kootenay Lawn Doctor</title>
 <style>
-  body{font-family:Segoe UI,Arial,sans-serif;background:#f4f6f8;margin:0;padding:24px 16px;}
+  body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f8;margin:0;padding:24px 16px;}
   .wrap{max-width:640px;margin:0 auto;}
-  .card{background:#fff;border-radius:10px;padding:28px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:20px;}
+  .card{background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:28px;margin-bottom:20px;}
   .pagehead{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
-  .pagehead img{width:60px;height:60px;border-radius:10px;object-fit:contain;flex:none;}
+  .pagehead img{width:60px;height:60px;border-radius:8px;object-fit:contain;flex:none;}
   .pagesub{font-size:13px;color:#667;font-weight:500;margin:2px 0 0;}
-  h1{color:#0f2338;font-size:22px;margin:0 0 6px;}
-  h2{color:#0f2338;font-size:17px;margin:26px 0 10px;}
-  p{color:#444;font-size:15px;line-height:1.5;}
+  h1{color:#0f2338;font-size:24px;margin:0 0 6px;}
+  h2{color:#0f2338;font-size:16px;margin:26px 0 10px;}
+  p{color:#444;font-size:14px;line-height:1.5;}
   .small{font-size:13px;color:#777;}
   .spinner{display:inline-block;width:18px;height:18px;border:3px solid #d7dee7;border-top-color:#0f2338;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:10px;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .ok{color:#15803d;font-weight:700;font-size:44px;line-height:1;}
   label{display:block;color:#0f2338;font-size:14px;font-weight:600;margin:14px 0 4px;}
   label .opt{font-weight:400;color:#8a94a0;font-size:12px;}
-  textarea{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #c6cad2;border-radius:8px;font-size:15px;font-family:inherit;color:#1b2933;background:#fff;resize:vertical;min-height:80px;}
+  textarea{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;font-family:inherit;color:#1b2933;background:#fff;resize:vertical;min-height:80px;}
   textarea:focus{outline:2px solid #16a34a;border-color:#16a34a;}
-  .radio-card{display:block;border:1px solid #d7dee7;border-radius:8px;padding:13px 14px;margin:8px 0;cursor:pointer;font-size:15px;color:#1b2933;background:#fff;}
+  .radio-card{display:block;border:1px solid #cbd5e1;border-radius:8px;padding:13px 14px;margin:8px 0;cursor:pointer;font-size:14px;color:#1b2933;background:#fff;}
   .radio-card:hover{border-color:#16a34a;}
   .radio-card.checked{border:2px solid #16a34a;padding:12px 13px;}
   #rc-installments:hover{border-color:#2563eb;}
   #rc-installments.checked{border-color:#2563eb;background:#eff6ff;}
   #rc-prepay.checked{border-color:#16a34a;background:#f0faf3;}
   .radio-card input{margin-right:10px;vertical-align:-2px;}
-  .btn{background-color:#16a34a;color:#fff;padding:14px 24px;border:none;border-radius:10px;font-size:15.5px;font-weight:700;cursor:pointer;margin-top:18px;width:100%;box-shadow:0 1px 2px rgba(22,163,74,.35),inset 0 1px 0 rgba(255,255,255,.18);transition:background-color .15s ease,box-shadow .15s ease,transform .05s ease;}
+  .btn{background-color:#16a34a;color:#fff;padding:14px 24px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-top:18px;width:100%;box-shadow:0 1px 2px rgba(22,163,74,.35),inset 0 1px 0 rgba(255,255,255,.18);transition:background-color .15s ease,box-shadow .15s ease,transform .05s ease;}
   .btn:hover{background-color:#15803d;box-shadow:0 2px 6px rgba(22,163,74,.4);}
   .btn:active{transform:translateY(1px);}
   .btn[disabled]{background-color:#a7d7b9;cursor:wait;box-shadow:none;transform:none;}
@@ -40,75 +40,75 @@
   .quote{display:inline-block;background:#2563eb;color:#fff;font-size:12px;font-weight:700;border-radius:6px;padding:2px 9px;margin-left:8px;vertical-align:2px;}
   .total{display:inline-block;background:#16a34a;color:#fff;font-size:12px;font-weight:700;border-radius:6px;padding:2px 9px;margin-left:8px;vertical-align:2px;}
   .acct{background:#f7f9fb;border:1px solid #dfe6ec;border-radius:9px;padding:13px 14px;margin:0 0 20px;}
-  .acct .lbl{font-size:10px;font-weight:700;letter-spacing:.06em;color:#8a94a0;text-transform:uppercase;margin:0 0 8px;}
+  .acct .lbl{font-size:11px;font-weight:700;letter-spacing:.06em;color:#8a94a0;text-transform:uppercase;margin:0 0 8px;}
   .acct-row1{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
   .acct-row1 .quote,.acct-row1 .total{margin-left:0;}
   .acct-name{font-size:16px;font-weight:800;color:#0f2338;}
   .acct-row2{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;row-gap:6px;}
   .acct-item{font-size:13px;color:#1b2933;font-weight:600;display:inline-flex;align-items:baseline;gap:5px;overflow-wrap:anywhere;}
-  .acct-item .k{font-size:10.5px;color:#8a94a0;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
+  .acct-item .k{font-size:11px;color:#8a94a0;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
   .cofbox{margin-top:16px;border:1px solid #eddba0;background:#fdf6e1;border-radius:10px;padding:13px 14px;}
-  .cofbox .cof-t{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#92650a;margin:0 0 8px;}
-  .cofbox p{margin:0 0 10px;font-size:13.5px;color:#5d4a1e;}
+  .cofbox .cof-t{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#92650a;margin:0 0 8px;}
+  .cofbox p{margin:0 0 10px;font-size:13px;color:#5d4a1e;}
   .cofbox .cardline{background:#fff;border-color:#e9dcae;margin-top:0;}
   .cofbox .small{margin-bottom:0;}
   .cofbox .link-quiet{margin-top:0;}
   .cofbox.need{border-color:#f3c8c8;background:#fff7f7;}
   .cofbox.need .cof-t{color:#b91c1c;}
   .cofbox.need p{color:#3d5a47;}
-  .cardline{margin-top:10px;font-size:13.5px;color:#3d5a47;background:#f0faf3;border:1px solid #bcd9c6;border-radius:10px;padding:12px 14px;font-weight:600;}
+  .cardline{margin-top:10px;font-size:13px;color:#3d5a47;background:#f0faf3;border:1px solid #bcd9c6;border-radius:10px;padding:12px 14px;font-weight:600;}
   .cardline-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
   .cardline-row .cardline{margin-top:0;flex:1;min-width:0;}
   .cardline .dots{letter-spacing:2px;}
-  .cardline .chg{font-weight:400;font-size:12.5px;}
-  .reassure-line{margin-top:10px;font-size:13.5px;color:#3d5a47;background:#f0faf3;border:1px solid #bcd9c6;border-radius:10px;padding:12px 14px;font-weight:600;}
-  .sched{margin-top:10px;border:1px solid #dfe6ec;border-radius:10px;overflow:hidden;background:#fff;}
+  .cardline .chg{font-weight:400;font-size:12px;}
+  .reassure-line{margin-top:10px;font-size:13px;color:#3d5a47;background:#f0faf3;border:1px solid #bcd9c6;border-radius:10px;padding:12px 14px;font-weight:600;}
+  .sched{margin-top:10px;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;background:#fff;}
   .sched .s-t{background:#f7f9fb;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#6b7684;padding:9px 14px;border-bottom:1px solid #dfe6ec;}
-  .sched .s-r{display:flex;justify-content:space-between;padding:9px 14px;font-size:13.5px;color:#1b2933;border-bottom:1px solid #eef1f5;}
+  .sched .s-r{display:flex;justify-content:space-between;padding:9px 14px;font-size:13px;color:#1b2933;border-bottom:1px solid #eef1f5;}
   .sched .s-r:last-child{border-bottom:none;}
   .sched .s-r .amt{font-weight:700;}
   .sched .s-r.last .amt{color:#15803d;}
-  .sched .s-note{padding:8px 14px;font-size:11.5px;color:#8a94a0;background:#f7f9fb;}
-  .prepaybox{margin-top:14px;border:1px solid #d7dee7;border-radius:10px;padding:15px 16px;background:#fbfcfd;display:none;}
+  .sched .s-note{padding:8px 14px;font-size:11px;color:#8a94a0;background:#f7f9fb;}
+  .prepaybox{margin-top:14px;border:1px solid #cbd5e1;border-radius:8px;padding:15px 16px;background:#fbfcfd;display:none;}
   .prepaybox.show{display:block;}
   .prepaybox.nobox{display:none !important;}
-  .prepaybox p{font-size:13.5px;color:#475569;margin:0 0 10px;}
+  .prepaybox p{font-size:13px;color:#475569;margin:0 0 10px;}
   .paycard{margin-top:12px;border:1px solid #bcd9c6;background:#f0faf3;border-radius:10px;padding:14px 16px;}
-  .paycard p{font-size:13.5px;color:#3d5a47;margin:0 0 8px;}
+  .paycard p{font-size:13px;color:#3d5a47;margin:0 0 8px;}
   .confirmbox{margin-top:12px;border:2px solid #16a34a;background:#fff;border-radius:10px;padding:16px;display:none;}
-  .confirmbox .c-t{font-size:15.5px;font-weight:800;color:#0f2338;margin:0 0 6px;}
-  .confirmbox p{font-size:13.5px;color:#3d5a47;margin:0 0 12px;}
+  .confirmbox .c-t{font-size:16px;font-weight:800;color:#0f2338;margin:0 0 6px;}
+  .confirmbox p{font-size:13px;color:#3d5a47;margin:0 0 12px;}
   .confirmbox .c-btns{display:flex;gap:10px;flex-wrap:wrap;}
-  .btn-danger{background-color:#16a34a;color:#fff;padding:13px 24px;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;}
+  .btn-danger{background-color:#16a34a;color:#fff;padding:13px 24px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;}
   .btn-danger:hover{background-color:#15803d;}
   .btn-danger[disabled]{background-color:#a7d7b9;cursor:wait;}
   .btn-ghost{background-color:#fff;color:#475569;border:1px solid #c6cad2;padding:13px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}
-  .declinemsg{margin-top:10px;border:1px solid #f3c8c8;background:#fdf3f3;border-radius:10px;padding:12px 14px;font-size:13.5px;color:#b91c1c;display:none;font-weight:600;}
+  .declinemsg{margin-top:10px;border:1px solid #f3c8c8;background:#fdf3f3;border-radius:10px;padding:12px 14px;font-size:13px;color:#b91c1c;display:none;font-weight:600;}
   .sel-amt{font-weight:800;color:#0f2338;}
   .radio-card.warn{border:2px solid #ef4444;background:#fef2f2;padding:12px 13px;}
   .radio-card.warn:hover{border-color:#dc2626;}
   #rc-installments.warn{border-color:#ef4444;background:#fef2f2;}
   #rc-installments.warn:hover{border-color:#dc2626;}
-  .req-tag{display:inline-block;background:#dc2626;color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.05em;border-radius:5px;padding:2px 7px;margin-left:6px;vertical-align:2px;text-transform:uppercase;}
+  .req-tag{display:inline-block;background:#dc2626;color:#fff;font-size:11px;font-weight:800;letter-spacing:.05em;border-radius:5px;padding:2px 7px;margin-left:6px;vertical-align:2px;text-transform:uppercase;}
   .chgbtn{display:inline-block;margin-top:0;background:#fff;border:1.5px solid #16a34a;color:#15803d;font-weight:700;font-size:13px;border-radius:8px;padding:8px 16px;text-decoration:none;cursor:pointer;white-space:nowrap;}
   .chgbtn:hover{background:#f0faf3;}
 
   .svc{margin:0 0 22px;border:1px solid #dfe6ec;border-radius:10px;overflow:hidden;background:#fff;}
   .svc .s-t{background:#f7f9fb;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#6b7684;padding:9px 14px;border-bottom:1px solid #dfe6ec;}
-  .svc .s-r{display:flex;justify-content:space-between;gap:14px;padding:10px 14px;font-size:13.5px;color:#1b2933;border-bottom:1px solid #eef1f5;align-items:baseline;}
+  .svc .s-r{display:flex;justify-content:space-between;gap:14px;padding:10px 14px;font-size:13px;color:#1b2933;border-bottom:1px solid #eef1f5;align-items:baseline;}
   .svc .s-r:last-child{border-bottom:none;}
   .svc .s-l{min-width:0;}
   .svc .s-n{font-weight:700;font-size:14px;}
-  .svc .s-d{color:#475569;font-size:12.5px;line-height:1.55;margin-top:5px;white-space:pre-line;overflow-wrap:anywhere;}
+  .svc .s-d{color:#475569;font-size:12px;line-height:1.55;margin-top:5px;white-space:pre-line;overflow-wrap:anywhere;}
   .svc .s-d p,.svc .s-d div{margin:0 0 6px;}
   .svc .s-d p:last-child,.svc .s-d div:last-child{margin-bottom:0;}
   .svc .s-d ul,.svc .s-d ol{margin:4px 0 6px;padding-left:20px;white-space:normal;}
   .svc .s-d li{margin:2px 0;}
   .svc .s-r2{color:#0f2338;white-space:nowrap;text-align:right;}
-  .svc .s-m{display:block;color:#8a94a0;font-size:11.5px;font-weight:400;}
+  .svc .s-m{display:block;color:#8a94a0;font-size:11px;font-weight:400;}
   .svc .s-sum{background:#f8fafc;border-top:1px solid #dfe6ec;padding:9px 14px;font-size:13px;color:#475569;}
   .svc .s-sum .row{display:flex;justify-content:space-between;padding:3px 0;}
-  .svc .s-sum .row.grand{color:#0369a1;font-weight:800;font-size:15px;padding-top:7px;}
+  .svc .s-sum .row.grand{color:#0369a1;font-weight:800;font-size:14px;padding-top:7px;}
   .terms{margin-top:26px;font-size:13px;color:#64748b;line-height:1.6;}
   .terms a{color:#2563eb;font-weight:600;}
   .klfooter{border-top:1px solid #e1ecf2;padding-top:16px;margin-top:16px;text-align:center;}
@@ -117,14 +117,15 @@
   .kf-brands>span+span{border-left:1px solid #d6e4ed;}
   .kf-offices>span{flex:1 1 0;min-width:150px;padding:0 10px;box-sizing:border-box;overflow-wrap:anywhere;}
   .kf-offices>span+span{border-left:1px solid #d6e4ed;}
-  .kf-brands a.brand{display:block;color:#0b5e8a;font-size:12.5px;font-weight:700;line-height:1.35;margin-bottom:4px;text-decoration:none;}
-  .kf-brands a{display:block;color:#0088cc;text-decoration:none;font-weight:600;font-size:12.5px;}
+  .kf-brands a.brand{display:block;color:#0b5e8a;font-size:12px;font-weight:700;line-height:1.35;margin-bottom:4px;text-decoration:none;}
+  .kf-brands a{display:block;color:#0088cc;text-decoration:none;font-weight:600;font-size:12px;}
   
   .kf-offices{margin-top:16px;}
-  .kf-offices b{display:block;color:#1e293b;font-size:12.5px;font-weight:700;margin-bottom:4px;}
+  .kf-offices b{display:block;color:#1e293b;font-size:12px;font-weight:700;margin-bottom:4px;}
   .kf-offices i{font-style:normal;color:#64748b;font-size:12px;line-height:1.5;}
+  .kf-offices .ma{display:block;font-style:normal;color:#94a3b8;font-size:11px;margin-top:3px;}
   .kf-sites{margin-top:16px;padding-top:14px;border-top:1px solid #e1ecf2;}
-  .kf-sites a{flex:1 1 0;min-width:150px;padding:0 10px;box-sizing:border-box;color:#0088cc;text-decoration:none;font-weight:600;font-size:12.5px;overflow-wrap:anywhere;}
+  .kf-sites a{flex:1 1 0;min-width:150px;padding:0 10px;box-sizing:border-box;color:#0088cc;text-decoration:none;font-weight:600;font-size:12px;overflow-wrap:anywhere;}
   @media(max-width:660px){
     .kf-brands>span,.kf-offices>span,.kf-sites a{flex:1 1 100%;white-space:normal;}
     .kf-brands>span+span,.kf-offices>span+span{border-left:none;border-top:1px solid #d6e4ed;padding-top:12px;margin-top:12px;}
@@ -172,12 +173,12 @@
 </div>
 <div class="card"><a href="../change/?t=PLACEHOLDER" id="changelink" style="display:none"></a><div class="klfooter">
       <div class="kf-row kf-brands">
-        <span><a class="brand" href="https://kootenaylawndoctor.com" target="_blank" rel="noopener">Kootenay Lawn Doctor</a><a href="tel:2504892031">(250) 489-2031</a></span>
-        <span><a class="brand" href="https://mowandsnow.ca" target="_blank" rel="noopener">Mow and Snow</a><a href="tel:2504231665">(250) 423-1665</a></span>
+        <span><a class="brand" href="https://kootenaylawndoctor.com" target="_blank" rel="noopener">Kootenay Lawn Doctor Inc.</a><a href="tel:2504892031">(250) 489-2031</a></span>
+        <span><a class="brand" href="https://mowandsnow.ca" target="_blank" rel="noopener">Mow and Snow Land Services Ltd.</a><a href="tel:2504231665">(250) 423-1665</a></span>
         <span><a class="brand" href="https://bluesprucelandscapes.ca" target="_blank" rel="noopener">Blue Spruce Landscapes</a><a href="tel:2502782583">(250) 278-2583</a></span>
       </div>
       <div class="kf-row kf-offices">
-        <span><b>Cranbrook Office</b><i>564 Industrial Road B<br>Cranbrook, BC V1C 4V9</i></span>
+        <span><b>Cranbrook Office</b><i>564 Industrial Road B<br>Cranbrook, BC V1C 4V9</i><em class="ma">Mailing address</em></span>
         <span><b>Fernie Office</b><i>13 Kutenai Road<br>Fernie, BC V0B 1M5</i></span>
       </div>
     </div></div>
@@ -283,7 +284,7 @@
     if(isCom){
       out += (n === 1) ? '<div class="s-note">Single invoice &mdash; payable by EFT, e-transfer, or cheque.</div>'
         : '<div class="s-note">Invoices are emailed monthly, payable by EFT, e-transfer, or cheque.</div>';
-      out += '<div class="s-note">EFT bank details on request &middot; e-transfer: <a href="mailto:accounts@kootenaylawndoctor.com" style="color:#2563eb;">accounts@kootenaylawndoctor.com</a> &middot; cheque by mail: 564 Industrial Rd B, Cranbrook, BC V1C 2Z5</div>';
+      out += '<div class="s-note">EFT bank details on request &middot; e-transfer: <a href="mailto:accounts@kootenaylawndoctor.com" style="color:#2563eb;">accounts@kootenaylawndoctor.com</a> &middot; cheque by mail: 564 Industrial Rd B, Cranbrook, BC V1C 4V9</div>';
     }
     else if(n === 1) out += '<div class="s-note">Single payment plan.</div>';
     else out += '<div class="s-note">Charged automatically to your card on file on ' + billDay() + ' of each month.</div>';
@@ -389,7 +390,7 @@
           + '</div></div>';
       });
       var trig = a.depthTrigger
-        ? '<div style="font-size:12.5px;color:#475569;padding:10px 14px;border-bottom:1px solid #eef1f5;background:#f8fafc;">Snow services on your route are automatically triggered at <b>' + esc(a.depthTrigger) + '</b> of snowfall.</div>'
+        ? '<div style="font-size:12px;color:#475569;padding:10px 14px;border-bottom:1px solid #eef1f5;background:#f8fafc;">Snow services on your route are automatically triggered at <b>' + esc(a.depthTrigger) + '</b> of snowfall.</div>'
         : '';
       var sum = '<div class="s-sum">'
         + '<div class="row"><span>' + (annual ? 'Subtotal' : 'Season subtotal') + '</span><span>' + money(a.subtotal || a.total) + '</span></div>'
@@ -516,7 +517,7 @@
         if(j.ok){
           formwrap.style.display='none'; content.style.display='block';
           content.innerHTML = '<h1>Paid &mdash; Season Covered</h1><p><span class="ok">&#10003;</span></p>'
-            + '<p style="font-size:17px;">Thanks, ' + esc((window.acct.first||'')) + '. We charged <b>' + money(j.amount) + '</b> to your card ending in ' + esc(j.last4 || (window.acct.cardLast4||'')) + '.</p>'
+            + '<p style="font-size:16px;">Thanks, ' + esc((window.acct.first||'')) + '. We charged <b>' + money(j.amount) + '</b> to your card ending in ' + esc(j.last4 || (window.acct.cardLast4||'')) + '.</p>'
             + '<p>Your 2026&ndash;27 snow season is paid in full and your renewal is confirmed. Our office has been notified, your account is updated, and a receipt is on its way to your email.</p>'
             + '<p class="small">You can close this page. Questions? Call us at 250-489-2031.</p>';
           window.scrollTo(0,0);
@@ -754,27 +755,27 @@
           var cardMsg, headMsg;
           if(a.residential && a.perVisit && a.paygInv && !a.hasCard){
             headMsg = '<h1>You&rsquo;re All Set &mdash; Renewal Confirmed</h1><p><span class="ok">&#10003;</span></p>'
-              + '<p style="font-size:17px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
+              + '<p style="font-size:16px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
             cardMsg = 'You&rsquo;re on pay-as-you-go: each completed visit is invoiced &mdash; payable by e-transfer or cheque, only when service happens.';
           } else if(a.residential && a.perVisit){
             headMsg = '<h1>You&rsquo;re All Set &mdash; Renewal Confirmed</h1><p><span class="ok">&#10003;</span></p>'
-              + '<p style="font-size:17px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
+              + '<p style="font-size:16px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
             cardMsg = a.hasCard && a.cardLast4
               ? 'You&rsquo;re on pay-as-you-go: each completed visit is charged automatically to your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + ' &mdash; only when service happens.'
               : 'We&rsquo;ll set up your pay-as-you-go billing as soon as your card is on file — use the Add Card button from this page or the link we send you.';
           } else if(a.residential){
             headMsg = '<h1>You&rsquo;re All Set &mdash; Renewal Confirmed</h1><p><span class="ok">&#10003;</span></p>'
-              + '<p style="font-size:17px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
+              + '<p style="font-size:16px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
             cardMsg = a.hasCard && a.cardLast4
               ? 'Your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + ' will be billed in equal monthly installments starting ' + startLong() + '.'
               : 'We&rsquo;ll set up your monthly installments as soon as your card is on file — use the Add Card button from this page or the link we send you.';
           } else if(a.perVisit){
             headMsg = '<h1>Proposal Accepted &mdash; You&rsquo;re All Set</h1><p><span class="ok">&#10003;</span></p>'
-              + '<p style="font-size:17px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
+              + '<p style="font-size:16px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
             cardMsg = 'You&rsquo;re on per-visit invoicing: each completed visit is invoiced &mdash; payable by EFT, e-transfer, or cheque. No invoices unless service happens. Our office will follow up with the details.';
           } else {
             headMsg = '<h1>Proposal Accepted &mdash; You&rsquo;re All Set</h1><p><span class="ok">&#10003;</span></p>'
-              + '<p style="font-size:17px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
+              + '<p style="font-size:16px;">Thanks, ' + esc(first) + '. Your 2026&ndash;27 snow season is confirmed for ' + esc([a.street,a.city].filter(Boolean).join(', ')) + '.</p>';
             cardMsg = a.hasCard && a.cardLast4
               ? 'We&rsquo;ll bill your ' + esc(a.cardBrand ? a.cardBrand + ' ' : '') + 'card ending in ' + esc(a.cardLast4) + ' in equal monthly payments starting ' + startLong() + ' &mdash; or invoice terms if you prefer; our office will confirm with you.'
               : 'We&rsquo;ll invoice you monthly through the season, starting ' + startLong() + ' &mdash; payable by EFT, e-transfer, or cheque. Our office will follow up with the details.';
