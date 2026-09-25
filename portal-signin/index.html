@@ -36,7 +36,7 @@
 <body>
 <div class="card">
   <h1>Get into your client portal</h1>
-  <p id="intro">We'll email your portal registration link to the address on your account. It arrives in about a minute &mdash; check your inbox (and spam folder) for &ldquo;Set up Client Portal!&rdquo;</p>
+  <p id="intro">We'll email your portal registration link to the address on your account. It arrives in about a minute &mdash; look for &ldquo;set up your Client Portal&rdquo; in your inbox (and spam folder).</p>
   <button id="sendbtn" type="button">Send my registration email &rarr;</button>
   <div id="res"></div>
   <div class="klfooter">
@@ -77,7 +77,7 @@
     }).then(function(r){ return r.json(); }).then(function(j){
       if (j && j.ok) {
         btn.textContent = 'Sent \u2713';
-        res.textContent = "Your registration email is on its way. Check your inbox (and spam folder) for \u201CSet up Client Portal!\u201D";
+        res.textContent = "Your registration email is on its way. Look for \u201Cset up your Client Portal\u201D in your inbox (and spam folder).";
         res.className = 'ok';
       } else {
         btn.disabled = false;
