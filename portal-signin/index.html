@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Client Portal Sign-In Help</title>
+<style>
+  body{margin:0;padding:24px 16px;background:#eef5ef;font-family:Arial,Helvetica,sans-serif;color:#1e293b;-webkit-text-size-adjust:none;}
+  .card{max-width:520px;margin:0 auto;background:#fff;border:1px solid #dbe7dd;border-radius:12px;padding:28px 24px;box-shadow:0 4px 18px rgba(20,83,45,.08);}
+  h1{font-size:18px;margin:0 0 10px 0;color:#166534;}
+  p{font-size:14px;line-height:1.55;color:#334155;margin:0 0 18px 0;}
+  button{background-color:#16a34a;border:none;border-radius:8px;color:#fff;font-weight:700;font-size:14px;padding:14px 24px;cursor:pointer;width:100%;}
+  button:hover{background-color:#15803d;}
+  button[disabled]{background-color:#a7d7b9;cursor:wait;}
+  small{display:block;margin-top:16px;font-size:12px;color:#64748b;line-height:1.5;}
+  #res{display:none;margin-top:16px;font-size:14px;line-height:1.55;}
+  #res.ok{color:#15803d;} #res.err{color:#b91c1c;}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Get into your client portal</h1>
+  <p id="intro">We'll email your portal registration link to the address on your account. It arrives in about a minute &mdash; check your inbox (and spam folder) for &ldquo;Set up Client Portal!&rdquo;</p>
+  <button id="sendbtn" type="button">Send my registration email &rarr;</button>
+  <div id="res"></div>
+  <small>Questions? Call the office anytime &mdash; Kootenay Lawn Doctor (250) 489-2031 &middot; Mow and Snow (250) 423-1665.</small>
+</div>
+<script>
+(function(){
+  var qs = new URLSearchParams(window.location.search);
+  var q = qs.get('q') || '';
+  var t = qs.get('t') || '';
+  var btn = document.getElementById('sendbtn');
+  var res = document.getElementById('res');
+  var API = 'https://doc-pro-781789de.base44.app/functions/kldPortalInvite';
+
+  if (!q && !t) {
+    document.getElementById('intro').textContent = "This link isn't working. Please call or email us and we'll send you a fresh sign-in link.";
+    btn.style.display = 'none';
+    return;
+  }
+
+  btn.addEventListener('click', function(){
+    btn.disabled = true;
+    btn.textContent = 'Sending\u2026';
+    var endpoint = API + '?q=' + encodeURIComponent(q) + (t ? '&t=' + encodeURIComponent(t) : '');
+    fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'auto' })
+    }).then(function(r){ return r.json(); }).then(function(j){
+      if (j && j.ok) {
+        btn.textContent = 'Sent \u2713';
+        res.textContent = "Your registration email is on its way. Check your inbox (and spam folder) for \u201CSet up Client Portal!\u201D";
+        res.className = 'ok';
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Send my registration email \u2192';
+        res.textContent = 'Something went wrong \u2014 please call or email us and we\u2019ll sort it out.';
+        res.className = 'err';
+      }
+      res.style.display = 'block';
+    }).catch(function(){
+      btn.disabled = false;
+      btn.textContent = 'Send my registration email \u2192';
+      res.textContent = 'Network hiccup \u2014 please try again.';
+      res.className = 'err';
+      res.style.display = 'block';
+    });
+  });
+})();
+</script>
+</body>
+</html>
