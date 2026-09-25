@@ -15,6 +15,22 @@
   small{display:block;margin-top:16px;font-size:12px;color:#64748b;line-height:1.5;}
   #res{display:none;margin-top:16px;font-size:14px;line-height:1.55;}
   #res.ok{color:#15803d;} #res.err{color:#b91c1c;}
+  .klfooter{border-top:1px solid #dbe7dd;padding-top:16px;margin-top:16px;text-align:center;}
+  .kf-row{display:flex;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin:0;}
+  .kf-brands>span{flex:0 1 auto;padding:0 12px;white-space:nowrap;}
+  .kf-brands>span+span{border-left:1px solid #e1ecf2;}
+  .kf-offices>span{flex:1 1 0;min-width:150px;padding:0 10px;box-sizing:border-box;overflow-wrap:anywhere;}
+  .kf-offices>span+span{border-left:1px solid #e1ecf2;}
+  .kf-brands a.brand{display:block;color:#166534;font-size:12px;font-weight:700;line-height:1.35;margin-bottom:4px;text-decoration:none;}
+  .kf-brands a{display:block;color:#0b5e8a;text-decoration:none;font-weight:600;font-size:12px;}
+  .kf-offices{margin-top:16px;}
+  .kf-offices b{display:block;color:#1e293b;font-size:12px;font-weight:700;margin-bottom:4px;}
+  .kf-offices i{font-style:normal;color:#64748b;font-size:12px;line-height:1.5;white-space:nowrap;}
+  .kf-offices .ma{display:block;font-style:normal;color:#94a3b8;font-size:11px;margin-bottom:2px;}
+  @media(max-width:560px){
+    .kf-brands>span,.kf-offices>span{flex:1 1 100%;white-space:normal;}
+    .kf-brands>span+span,.kf-offices>span+span{border-left:none;border-top:1px solid #e1ecf2;padding-top:12px;margin-top:12px;}
+  }
 </style>
 </head>
 <body>
@@ -23,7 +39,17 @@
   <p id="intro">We'll email your portal registration link to the address on your account. It arrives in about a minute &mdash; check your inbox (and spam folder) for &ldquo;Set up Client Portal!&rdquo;</p>
   <button id="sendbtn" type="button">Send my registration email &rarr;</button>
   <div id="res"></div>
-  <small>Questions? Call the office anytime &mdash; Kootenay Lawn Doctor (250) 489-2031 &middot; Mow and Snow (250) 423-1665.</small>
+  <div class="klfooter">
+      <div class="kf-row kf-brands">
+        <span><a class="brand" href="https://kootenaylawndoctor.com" target="_blank" rel="noopener">Kootenay Lawn Doctor Inc.</a><a href="tel:2504892031">(250) 489-2031</a></span>
+        <span><a class="brand" href="https://mowandsnow.ca" target="_blank" rel="noopener">Mow and Snow Land Services Ltd.</a><a href="tel:2504231665">(250) 423-1665</a></span>
+        <span><a class="brand" href="https://bluesprucelandscapes.ca" target="_blank" rel="noopener">Blue Spruce Landscapes</a><a href="tel:2502782583">(250) 278-2583</a></span>
+      </div>
+      <div class="kf-row kf-offices">
+        <span><em class="ma">Mailing address</em><b>Cranbrook Office</b><i>564 Industrial Road B<br>Cranbrook, BC V1C 4V9</i></span>
+        <span><em class="ma">&nbsp;</em><b>Fernie Office</b><i>13 Kutenai Road<br>Fernie, BC V0B 1M5</i></span>
+      </div>
+    </div>
 </div>
 <script>
 (function(){
