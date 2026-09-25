@@ -358,6 +358,7 @@
     a.paygInv = paygInv;
     var perVisitRates = (a.items || []).filter(function(it){ return it.rate > 0; })
       .map(function(it){ return money(it.rate) + ' per ' + esc(it.name || 'visit'); }).join(', ');
+    window.perVisitRates = perVisitRates; // expose globally — updateCardPrompt() + submit handler run outside this scope (Sept 24 fix: office-ok'd per-visit page crashed on ReferenceError)
 
     // headline / section / label copy
     document.getElementById('maintitle').textContent = annual
