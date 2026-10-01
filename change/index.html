@@ -152,10 +152,6 @@
       <textarea id="other-details" maxlength="900" placeholder="How can we help?"></textarea>
     </div>
 
-    <h2>Best way to reach you</h2>
-    <label class="radio-card"><input type="radio" name="contactpref" value="0" checked> Phone call</label>
-    <label class="radio-card"><input type="radio" name="contactpref" value="1"> Email</label>
-
 
     <div class="err" id="err"></div>
     <button class="btn" id="submitbtn">Send My Request &nbsp;&rarr;</button>
@@ -341,8 +337,6 @@
       lines.push('REQUEST: Something else.');
       lines.push('DETAILS: ' + document.getElementById('other-details').value.trim());
     }
-    var contactPref = document.querySelector('input[name=contactpref]:checked').value;
-    lines.push('CONTACT PREFERENCE: ' + (contactPref === '0' ? 'Phone call' : 'Email') + '.');
     return lines.join(' ');
   }
 
@@ -367,9 +361,8 @@
     var first = (a.first||'').trim(), last = (a.last||'').trim(), email = (a.email||'').trim();
 
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Sending&hellip;';
-    var contactPref = document.querySelector('input[name=contactpref]:checked').value;
     fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
-      t:e, e:eq, q:qq, mode:'submit', choice:choice, details:composeDetails(), contactPref:contactPref,
+      t:e, e:eq, q:qq, mode:'submit', choice:choice, details:composeDetails(),
       first:first, last:last, email:email,
       phone:(a.phone||'').trim(),
       street:(a.street||'').trim(), city:(a.city||'').trim(), postal:(a.postal||'').trim()
