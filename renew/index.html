@@ -585,11 +585,15 @@
       // required-card state (red variant) with add-card CTA + live re-check
       box.style.display = 'block';
       box.className = 'cofbox need';
-      box.innerHTML = a.perVisit
+      // FIX (Oct 1 2026): the Add/Update Card button + check-again + auto-poll note were
+      // chained onto the false (installments) branch of the ternary, so pay-as-you-go
+      // clients got the red "Card required" box with NO button. Shared tail for both.
+      var needHead = a.perVisit
         ? '<p class="cof-t">Card required for pay-as-you-go billing</p>'
           + '<p style="margin-bottom:10px;">Each completed visit is billed automatically to your card &mdash; we can&rsquo;t set that up until a card is on file. Add one now (bank-grade secure, about 2 minutes):</p>'
         : '<p class="cof-t">Card required for monthly installments</p>'
-        + '<p style="margin-bottom:10px;">Your card is billed automatically on ' + billDay() + ' of each month &mdash; we can&rsquo;t set that up until a card is on file. Add one now (bank-grade secure, about 2 minutes):</p>'
+          + '<p style="margin-bottom:10px;">Your card is billed automatically on ' + billDay() + ' of each month &mdash; we can&rsquo;t set that up until a card is on file. Add one now (bank-grade secure, about 2 minutes):</p>';
+      box.innerHTML = needHead
         + '<a class="btn-inline" href="' + cardUrl + '" target="_blank" rel="noopener">Add / Update Card &rarr;</a>'
         + '<div style="margin-top:10px;"><button type="button" class="link-quiet" id="checkcardbtn">I&rsquo;ve added my card &mdash; check again</button></div>'
         + '<p class="small" style="margin-top:8px;margin-bottom:0;">We also check automatically every 10 seconds &mdash; the moment your card lands, your renewal unlocks right here.</p>';
