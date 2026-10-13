@@ -298,7 +298,7 @@
     }
     return rows;
   }
-  function schedHtml(n, monthly, total, isCom){
+  function schedHtml(n, monthly, total, isCom, payUrl){
     var rows = schedRows(n, monthly, total);
     var out = '<div class="sched"><div class="s-t">' + (isCom ? 'Your invoice schedule' : 'Your payment schedule') + '</div>';
     rows.forEach(function(r){
@@ -307,7 +307,16 @@
     if(isCom){
       out += (n === 1) ? '<div class="s-note">Single invoice &mdash; payable by EFT, e-transfer, or cheque.</div>'
         : '<div class="s-note">Invoices are emailed monthly, payable by EFT, e-transfer, or cheque.</div>';
-      out += '<div class="s-note">EFT bank details on request &middot; e-transfer: <a href="mailto:accounts@kootenaylawndoctor.com" style="color:#2563eb;">accounts@kootenaylawndoctor.com</a> &middot; cheque by mail: 564 Industrial Rd B, Cranbrook, BC V1C 4V9</div>';
+      // Ways to Pay (Ethan, Oct 13 2026): moved from the annual email body to the renewal portal
+      out += '<div class="s-t" style="margin-top:14px;">Ways to Pay &mdash; Commercial &amp; Strata</div>';
+      out += '<div class="s-note" style="line-height:1.75;">'
+        + '<b>Prepay the year:</b> pay the full contract year upfront &mdash; '
+        + (payUrl ? '<a href="' + payUrl + '" style="color:#2563eb;">prepay online here</a>, or by e-transfer, EFT, or cheque.' : 'prepay online, or by e-transfer, EFT, or cheque.')
+        + '<br><b>Credit card on file:</b> set up a card online and your monthly installments are billed automatically on the 1st of each month.'
+        + '<br><b>EFT:</b> bank transfer details available on request.'
+        + '<br><b>E-transfer:</b> <a href="mailto:accounts@kootenaylawndoctor.com" style="color:#2563eb;">accounts@kootenaylawndoctor.com</a>'
+        + '<br><b>Cheque by mail:</b> 564 Industrial Rd B, Cranbrook, BC V1C 4V9'
+        + '</div>';
     }
     else if(n === 1) out += '<div class="s-note">Single payment plan.</div>';
     else out += '<div class="s-note">Charged automatically to your card on file on ' + billDay() + ' of each month.</div>';
@@ -683,7 +692,7 @@
       box.innerHTML = a.perVisit
         ? '<div class="sched"><div class="s-t">How you&rsquo;ll be billed</div>'
           + '<div class="s-note" style="margin-top:2px;">Each completed visit is invoiced' + (perVisitRates ? ' at ' + perVisitRates : '') + ' &mdash; payable by EFT, e-transfer, or cheque. No invoices unless service happens.</div></div>'
-        : ((a.installments && a.monthly && a.total) ? schedHtml(a.installments, a.monthly, a.total, true) : '');
+        : ((a.installments && a.monthly && a.total) ? schedHtml(a.installments, a.monthly, a.total, true, qq ? ('https://card.kootenaylawndoctor.com/pay/?q=' + encodeURIComponent(qq)) : ('https://card.kootenaylawndoctor.com/pay/?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : ''))) : '');
       if(a.season === 'snow') box.innerHTML += '<p class="small" style="margin:10px 2px 0 2px;">Crews deploy automatically when your service threshold is met (typically 2&Prime; / 5 cm of snow) or when freezing precipitation is detected.</p>';
       updateSubmitState(false);
     } else if(sel === 'prepay') {
