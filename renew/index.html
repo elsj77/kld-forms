@@ -357,7 +357,8 @@
       }
     }).catch(function(){ /* payment lookup optional — page still works without it */ });
   }).then(function(){
-    var a = window.acct || {};
+    var a = window.acct; if(!a){ return; } // error path already ran fail() — never re-render over it (Oct 15 fix: empty form was overwriting the error message)
+
     // ── season matrix (Sept 24 2026): snow / spring / summer / fall / annual — server-detected
     // from the quote's selected DOCUMENT (snowRenewCharge lookup returns `season`); item-keyword
     // fallback for older cached payloads. Empty items → snow (legacy default).
