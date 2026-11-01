@@ -779,6 +779,11 @@
         + '<div class="row grand"><span>Total season cost</span><span>' + money(tot) + '</span></div>';
     }
     a.total = tot; a.subtotal = sub;
+    // keep every amount on the page in step with the add-ons (Oct 31 2026)
+    var nInst = Number(a.installments) || 1;
+    a.monthly = nInst > 1 ? Math.round(tot * 100 / nInst) / 100 : tot;
+    try { if(typeof schedHtml === 'function') schedHtml(); } catch(_) {}
+    try { updateCardPrompt(); } catch(_) {}
   }
   function initUpsell(){
     var a = window.acct || {};
