@@ -1016,6 +1016,17 @@
     }
 
     if(paymode){
+      if(!btn.dataset.updone && upSelected().length){
+        var pk2 = upSelected(); btn.dataset.updone = '1'; btn.disabled = true;
+        var keep0 = btn.innerHTML; btn.innerHTML = '<span class="spinner"></span>Adding your services&hellip;';
+        var rn2 = [], sk2 = [];
+        pk2.forEach(function(x){ var m2 = String(x.key||'').match(/^round_([1-4])$/); if(m2){ rn2.push(Number(m2[1])); } else { sk2.push(String(x.key)); } });
+        fetch(API_RADD, { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ token: e, rounds: rn2, keys: sk2, dry_run: false, book: true }) })
+          .catch(function(){ return {}; })
+          .then(function(){ btn.disabled = false; btn.innerHTML = keep0; btn.click(); });
+        return;
+      }
       stopPoll();
       if(paymode === 'charge'){ showChargeConfirm(); }
       else {
