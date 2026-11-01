@@ -775,7 +775,7 @@
   }
   function initUpsell(){
     var a = window.acct || {};
-    if(!qq) return;
+    if(!e) return; // token-driven (Oct 31 2026): upsell API keys on the portal token, not the q GUID
     fetch(API_UP, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: e, mode:'quote' }) })
       .then(function(r){ return r.json(); })
       .then(function(u){
