@@ -148,6 +148,7 @@
   <div id="formwrap" style="display:none;">
     <div class="acct" id="who" style="display:none;"></div>
     <div class="svc" id="services" style="display:none;"></div>
+    <div class="svc" id="upsell" style="display:none;"></div>
 
     <h2 style="margin-top:0;" id="payhead">How would you like to pay?</h2>
     <label class="radio-card" id="rc-installments"><input type="radio" name="payplan" value="installments" checked> <span id="inst-head">Monthly installments </span><span class="sel-amt" id="instamt"></span><span id="inst-dash">&mdash; billed to my card on file</span><br><span class="opt" id="instopt"></span></label>
@@ -187,6 +188,7 @@
 (function(){
   var API = 'https://doc-pro-781789de.base44.app/functions/snowChangeRequest';
   var API_PAY = 'https://doc-pro-781789de.base44.app/functions/snowRenewCharge';
+  var API_UP  = 'https://doc-pro-781789de.base44.app/functions/summerUpsellPublic';
   var qs = new URLSearchParams(location.search);
   var e = (qs.get('t')||'').trim(); // secure per-client portal token (Sept 17 2026)
   var eq = (qs.get('e')||'').trim(); // estimate number hint (which of this client's quotes this email is about)
@@ -449,13 +451,14 @@
       var trig = (a.depthTrigger && season === 'snow')
         ? '<div style="font-size:12px;color:#475569;padding:10px 14px;border-bottom:1px solid #eef1f5;background:#f8fafc;">Snow services on your route are automatically triggered at <b>' + esc(a.depthTrigger) + '</b> of snowfall.</div>'
         : '';
-      var sum = '<div class="s-sum">'
+      var sum = '<div class="s-sum" id="sumblock">'
         + '<div class="row"><span>' + (annual ? 'Subtotal' : 'Season subtotal') + '</span><span>' + money(a.subtotal || a.total) + '</span></div>'
         + (a.tax ? '<div class="row"><span>GST</span><span>' + money(a.tax) + '</span></div>' : '')
         + '<div class="row grand"><span>' + (annual ? 'Total Cost' : 'Total season cost') + '</span><span>' + money(a.total) + '</span></div>'
         + '</div>';
       svc.innerHTML = '<div class="s-t">' + (annual ? 'What&rsquo;s included in your renewal' : 'What&rsquo;s included in your season') + '</div>' + rows + trig + sum;
       svc.style.display = 'block';
+      if(season === 'summer'){ initUpsell(); }
     }
 
     var who = document.getElementById('who');
@@ -746,10 +749,83 @@
   }
   window.updateCardPrompt = updateCardPrompt;
 
+
+  // ── optional season add-ons (summer renewals only) ──
+  var UP_BASE = null;
+  function upSelected(){
+    var sel = window.upsellSel || {}, out = [];
+    for(var k in sel){ if(sel[k]) out.push(sel[k]); }
+    return out;
+  }
+  function upTotals(){
+    var a = window.acct || {};
+    if(!UP_BASE){ UP_BASE = { sub: Number(a.subtotal || a.total || 0), tax: Number(a.tax || 0), tot: Number(a.total || 0) }; }
+    var add = 0;
+    upSelected().forEach(function(x){ add += Number(x.price || 0); });
+    var gstAdd = Math.round(add * 0.05 * 100) / 100;
+    var sub = UP_BASE.sub + add, tot = UP_BASE.tot + add + gstAdd;
+    var block = document.getElementById('sumblock');
+    if(block){
+      block.innerHTML =
+        '<div class="row"><span>Season subtotal</span><span>' + money(sub) + '</span></div>'
+        + (UP_BASE.tax ? '<div class="row"><span>GST</span><span>' + money(UP_BASE.tax + gstAdd) + '</span></div>' : '')
+        + '<div class="row grand"><span>Total season cost</span><span>' + money(tot) + '</span></div>';
+    }
+    a.total = tot; a.subtotal = sub;
+  }
+  function initUpsell(){
+    var a = window.acct || {};
+    if(!qq) return;
+    fetch(API_UP, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: e, mode:'quote' }) })
+      .then(function(r){ return r.json(); })
+      .then(function(u){
+        if(!u || u.error || u.has_winter_lines) return;
+        var list = (u.addons || []).filter(function(x){ return x && x.ready && Number(x.price) > 0; });
+        if(!list.length) return;
+        window.upsellSel = window.upsellSel || {};
+        var html = '<div class="s-t">Add these to your season <span style="font-weight:400;color:#475569;">&mdash; optional</span></div>';
+        list.forEach(function(x){
+          html += '<label class="s-r" style="cursor:pointer;align-items:center;">'
+            + '<div class="s-l"><div class="s-n">' + esc(x.name) + '</div>'
+            + '<div class="s-d">Optional add-on for your 2027 season</div></div>'
+            + '<div class="s-r2" style="display:flex;align-items:center;gap:12px;"><b>' + money(x.price) + '</b>'
+            + '<input type="checkbox" data-k="' + esc(x.key) + '" data-p="' + x.price + '" data-n="' + esc(x.name)
+            + '" style="width:20px;height:20px;accent-color:#16a34a;"></div></label>';
+        });
+        html += '<div class="s-note" style="padding:8px 14px;">Tick any you would like added. Your total updates as you choose.</div>';
+        var box = document.getElementById('upsell');
+        box.innerHTML = html;
+        box.style.display = 'block';
+        Array.prototype.forEach.call(box.querySelectorAll('input[type=checkbox]'), function(cb){
+          cb.addEventListener('change', function(){
+            var k = cb.getAttribute('data-k');
+            window.upsellSel[k] = cb.checked
+              ? { key:k, price: Number(cb.getAttribute('data-p')), name: cb.getAttribute('data-n') }
+              : null;
+            upTotals();
+          });
+        });
+      })
+      .catch(function(){});
+  }
+
   document.getElementById('submitbtn').addEventListener('click', function(){
     errEl.style.display='none';
     var btn = this;
     var paymode = btn.dataset.paymode || '';
+    if(!paymode && !btn.dataset.updone && upSelected().length){
+      var picks = upSelected();
+      btn.dataset.updone = '1';
+      btn.disabled = true;
+      var keep = btn.innerHTML;
+      btn.innerHTML = '<span class="spinner"></span>Adding your services&hellip;';
+      fetch(API_UP, { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ token: e, mode:'apply', addons: picks, dry_run: false }) })
+        .catch(function(){})
+        .then(function(){ btn.disabled = false; btn.innerHTML = keep; btn.click(); });
+      return;
+    }
+
     if(paymode){
       stopPoll();
       if(paymode === 'charge'){ showChargeConfirm(); }
