@@ -824,10 +824,10 @@
     if(!a.items || !a.items.length){ box.classList.remove('show'); document.body.classList.remove('osum-on'); return; }
     var addons = osumSelected();
     var addTotal = addons.reduce(function(t,x){ return t + Number(x.price||0); }, 0);
-    var baseSub = Number((window.UP_BASE && UP_BASE.sub) || a.subtotal || 0);
-    var sub = Math.round((baseSub + addTotal)*100)/100;
-    var gst = Math.round(sub * 0.05 * 100)/100;
-    var tot = Math.round((sub + gst)*100)/100;
+    // a.subtotal already carries any add-ons applied by upTotals(), so back them out for the itemised list
+    var sub = Math.round(((Number(a.subtotal)||0) - addTotal)*100)/100;
+    var gst = Math.round(((Number(a.tax)||0) + addTotal*0.05)*100)/100;
+    var tot = Math.round((sub + addTotal + gst)*100)/100;
     var h = '<h3>Your ' + (window.__seasonWord || 'season') + ' summary</h3><p class="osub">Everything you are confirming</p>';
     a.items.forEach(function(it){
       if(!it || !Number(it.rate)) return;
@@ -842,14 +842,25 @@
     h += '<div class="otot grand"><span>Total</span><span>' + money(tot) + '</span></div>';
     var pay = osumPaymentLine(tot);
     h += '<div class="osel"><b>' + pay.head + '</b><span>' + pay.body + '</span></div>';
-    var blocked = window.__submitBlocked === true;
-    h += '<div class="oact"><button id="osumGo" type="button"' + (blocked ? ' disabled' : '') + '>' + (blocked ? 'Add a card above to confirm' : 'Confirm &amp; Accept &nbsp;&rarr;') + '</button></div>';
+    var mode2 = (document.querySelector('input[name=payplan]:checked')||{}).value || 'installments';
+    var blocked = (window.__submitBlocked === true) && mode2 !== 'prepay';
+    var goLabel = (mode2 === 'prepay')
+      ? ('Prepay ' + money(tot) + ' &nbsp;&rarr;')
+      : (blocked ? 'Add a card above to confirm' : 'Confirm &amp; Accept &nbsp;&rarr;');
+    h += '<div class="oact"><button id="osumGo" type="button"' + (blocked ? ' disabled' : '') + '>' + goLabel + '</button></div>';
     h += '<p class="onote">GST included above. Adding or removing services updates this summary instantly.</p>';
     body.innerHTML = h;
     box.classList.add('show');
     if(window.innerWidth >= 1200) document.body.classList.add('osum-on');
     var go = document.getElementById('osumGo');
-    if(go) go.addEventListener('click', function(){ var b = document.getElementById('submitbtn'); if(b) b.click(); });
+    if(go) go.addEventListener('click', function(){
+      if(mode2 === 'prepay'){
+        var pl = document.getElementById('prepaylink');
+        if(pl && pl.href) window.open(pl.href, '_blank', 'noopener');
+        return;
+      }
+      var b = document.getElementById('submitbtn'); if(b) b.click();
+    });
   }
   window.renderOrderSummary = renderOrderSummary;
   (function(){
