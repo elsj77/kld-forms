@@ -222,6 +222,7 @@
   var API_UP  = 'https://doc-pro-781789de.base44.app/functions/summerUpsellPublic';
   var API_RD  = 'https://doc-pro-781789de.base44.app/functions/summerRoundUpsell'; // missing-round add-ons
   var API_FL  = 'https://doc-pro-781789de.base44.app/functions/summerClientFlags'; // AccountType + no-card exception
+  var API_RS  = 'https://doc-pro-781789de.base44.app/functions/renewResolve'; // quote GUID -> portal token (Oct 31 2026)
   window.__flagsP = (function(){
     var t0 = (new URLSearchParams(location.search).get('t') || '').trim();
     if(!t0) return Promise.resolve(null);
@@ -234,6 +235,30 @@
   var qq = (qs.get('q')||'').trim(); // estimate GUID link — [quotelinkurl] merge, SAP's own proposal credential (Sept 18 2026)
   var forcedT = (qs.get('type')||'').toLowerCase(); // 'residential' | 'commercial' override (renamed from t, Sept 17 2026)
   var planP = (qs.get('plan')||'').toLowerCase(); // 'prepay' | 'installments' — email CTA pre-selection (Sept 18 2026)
+
+  // ── quote-link entry (SAP proposal button, ?q=<viewmyproposal url>) ──
+  // snowRenewCharge's q path parses the quote document instead of the live line items and
+  // reports a bare "Lawn Spraying Package" at $0, which kills the services list and the
+  // upsell engine. Resolve the quote GUID to its portal token and reload on the token path
+  // (Oct 31 2026, Ethan: proposal #10332 showed wrong services and no add-ons).
+  var legacyQ = qs.get('legacy') === '1';
+  if(!e && qq && !legacyQ){
+    fetch(API_RS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ q: qq }) })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if(j && j.token){
+          var next = '?t=' + encodeURIComponent(j.token) + (eq ? '&e=' + encodeURIComponent(eq) : '');
+          location.replace(next);
+          return;
+        }
+        var back = '?q=' + encodeURIComponent(qq) + '&legacy=1' + (eq ? '&e=' + encodeURIComponent(eq) : '');
+        location.replace(back);
+      })
+      .catch(function(){
+        location.replace('?q=' + encodeURIComponent(qq) + '&legacy=1' + (eq ? '&e=' + encodeURIComponent(eq) : ''));
+      });
+    return;
+  }
 
   // quote start date (from snowRenewCharge lookup.start) — installment billing day follows it.
   // Falls back to Nov 1, 2026 when the quote has no valid start date.
