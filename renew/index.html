@@ -144,6 +144,9 @@
   #osum .otot{display:flex;justify-content:space-between;padding:4px 0;}
   #osum .otot.sum{border-top:1px solid #dbe7dd;margin-top:6px;padding-top:8px;}
   #osum .otot.grand{font-weight:800;font-size:15px;color:#14532d;}
+  #osum .ochips{display:flex;gap:6px;margin:10px 0 0;}
+  #osum .ochip{flex:1 1 0;background:#eef6f0;border:1px solid #cfe8d8;color:#166534;border-radius:20px;padding:7px 4px;font-size:12px;font-weight:700;cursor:pointer;}
+  #osum .ochip.on{background:#16a34a;border-color:#16a34a;color:#fff;}
   #osum .osel{margin-top:12px;background:#f4fbf6;border:1px solid #cfe8d8;border-radius:8px;padding:10px;}
   #osum .osel b{display:block;font-size:13px;color:#166534;margin-bottom:3px;}
   #osum .osel span{font-size:12px;color:#334155;line-height:1.45;display:block;}
@@ -218,6 +221,13 @@
   var API_PAY = 'https://doc-pro-781789de.base44.app/functions/snowRenewCharge';
   var API_UP  = 'https://doc-pro-781789de.base44.app/functions/summerUpsellPublic';
   var API_RD  = 'https://doc-pro-781789de.base44.app/functions/summerRoundUpsell'; // missing-round add-ons
+  var API_FL  = 'https://doc-pro-781789de.base44.app/functions/summerClientFlags'; // AccountType + no-card exception
+  window.__flagsP = (function(){
+    var t0 = (new URLSearchParams(location.search).get('t') || '').trim();
+    if(!t0) return Promise.resolve(null);
+    return fetch(API_FL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: t0 }) })
+      .then(function(r){ return r.json(); }).catch(function(){ return null; });
+  })();
   var qs = new URLSearchParams(location.search);
   var e = (qs.get('t')||'').trim(); // secure per-client portal token (Sept 17 2026)
   var eq = (qs.get('e')||'').trim(); // estimate number hint (which of this client's quotes this email is about)
@@ -388,6 +398,11 @@
       }
     }).catch(function(){ /* payment lookup optional — page still works without it */ });
   }).then(function(){
+    return Promise.race([
+      window.__flagsP || Promise.resolve(null),
+      new Promise(function(res){ setTimeout(function(){ res(null); }, 2500); })
+    ]).then(function(f){ if(f && !f.error) window.__flags = f; });
+  }).then(function(){
     var a = window.acct; if(!a){ return; } // error path already ran fail() — never re-render over it (Oct 15 fix: empty form was overwriting the error message)
 
     // ── season matrix (Sept 24 2026): snow / spring / summer / fall / annual — server-detected
@@ -406,8 +421,12 @@
       : (annual ? 'year' : ((a.start ? a.start.y + ' ' : '') + sc.name));
     window.seasonPayPhrase = seasonPayPhrase;
     // ── version: residential vs commercial (auto from estimate doc; ?t= overrides) ──
-    var isRes = forcedT === 'commercial' ? false : (forcedT === 'residential' ? true : (a.residential !== false));
+    var fl = window.__flags || null;
+    var resSap = (fl && fl.account_type) ? (fl.residential === true) : (a.residential !== false);
+    var isRes = forcedT === 'commercial' ? false : (forcedT === 'residential' ? true : resSap);
     a.residential = isRes; window.acct = a;
+    // no-card exception comes from the client's renewal-type field, not from the quote shape
+    if(fl && fl.exception) a.payg_invoiced = (fl.exception.active === true);
     // ── per-visit quotes (installments === 1): pay-as-you-go terms (Ethan, Sept 21 2026) ──
     // Quoted per-visit instead of equal monthly installments or a season prepay.
     // Residential: PAYG with card-on-file autocharge REQUIRED. Commercial/strata: per-visit invoicing, no card needed.
@@ -841,6 +860,16 @@
     h += '<div class="otot sum"><span>Subtotal</span><span>' + money(sub) + '</span></div>';
     h += '<div class="otot"><span>GST (5%)</span><span>' + money(gst) + '</span></div>';
     h += '<div class="otot grand"><span>Total</span><span>' + money(tot) + '</span></div>';
+    var nInst0 = Number(a.installments) || 1;
+    var curMode = (document.querySelector('input[name=payplan]:checked')||{}).value || 'installments';
+    var chips = (nInst0 > 1)
+      ? [{ v:'installments', l: nInst0 + '&nbsp;payments' }, { v:'prepay', l:'Prepay' }]
+      : [{ v:'installments', l:'Auto-pay' }, { v:'prepay', l:'Prepay' }];
+    if(chips.length > 1){
+      h += '<div class="ochips">' + chips.map(function(c){
+        return '<button type="button" class="ochip' + (c.v === curMode ? ' on' : '') + '" data-v="' + c.v + '">' + c.l + '</button>';
+      }).join('') + '</div>';
+    }
     var pay = osumPaymentLine(tot);
     h += '<div class="osel"><b>' + pay.head + '</b><span>' + pay.body + '</span></div>';
     var mode2 = (document.querySelector('input[name=payplan]:checked')||{}).value || 'installments';
@@ -853,6 +882,13 @@
     body.innerHTML = h;
     box.classList.add('show');
     if(window.innerWidth >= 1200) document.body.classList.add('osum-on');
+    Array.prototype.forEach.call(body.querySelectorAll('.ochip'), function(cb){
+      cb.addEventListener('click', function(){
+        var r = document.querySelector('input[name=payplan][value="' + cb.getAttribute('data-v') + '"]');
+        if(r){ r.checked = true; try { updateCardPrompt(); } catch(_) {} }
+        renderOrderSummary();
+      });
+    });
     var go = document.getElementById('osumGo');
     if(go) go.addEventListener('click', function(){
       if(mode2 === 'prepay'){
