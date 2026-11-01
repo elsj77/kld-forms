@@ -223,6 +223,7 @@
   var API_RD  = 'https://doc-pro-781789de.base44.app/functions/summerRoundUpsell'; // missing-round add-ons
   var API_FL  = 'https://doc-pro-781789de.base44.app/functions/summerClientFlags'; // AccountType + no-card exception
   var API_RS  = 'https://doc-pro-781789de.base44.app/functions/renewResolve'; // quote GUID -> portal token (Oct 31 2026)
+  var API_RADD= 'https://doc-pro-781789de.base44.app/functions/summerRoundAdd'; // adds + books every selected add-on
   window.__flagsP = (function(){
     var t0 = (new URLSearchParams(location.search).get('t') || '').trim();
     if(!t0) return Promise.resolve(null);
@@ -1005,14 +1006,12 @@
       btn.disabled = true;
       var keep = btn.innerHTML;
       btn.innerHTML = '<span class="spinner"></span>Adding your services&hellip;';
-      var rPicks = picks.filter(function(x){ return /^round_/.test(x.key); });
-      var aPicks = picks.filter(function(x){ return !/^round_/.test(x.key); });
-      var sends = [];
-      if(aPicks.length) sends.push(fetch(API_UP, { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ token: e, mode:'apply', addons: aPicks, dry_run: false }) }).then(function(r){ return r.json(); }).catch(function(){ return {}; }));
-      if(rPicks.length) sends.push(fetch(API_RD, { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ token: e, mode:'apply', addons: rPicks, dry_run: false }) }).then(function(r){ return r.json(); }).catch(function(){ return {}; }));
-      Promise.all(sends).then(function(){ btn.disabled = false; btn.innerHTML = keep; btn.click(); });
+      var rNums = [], sKeys = [];
+      picks.forEach(function(x){ var m = String(x.key||'').match(/^round_([1-4])$/); if(m){ rNums.push(Number(m[1])); } else { sKeys.push(String(x.key)); } });
+      fetch(API_RADD, { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ token: e, rounds: rNums, keys: sKeys, dry_run: false, book: true }) })
+        .then(function(r){ return r.json(); }).catch(function(){ return {}; })
+        .then(function(){ btn.disabled = false; btn.innerHTML = keep; btn.click(); });
       return;
     }
 
