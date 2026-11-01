@@ -181,7 +181,7 @@
     <div class="svc" id="upsell" style="display:none;"></div>
 
     <h2 style="margin-top:0;" id="payhead">How would you like to pay?</h2>
-    <label class="radio-card" id="rc-installments"><input type="radio" name="payplan" value="installments" checked> <span id="inst-head">Monthly installments </span><span class="sel-amt" id="instamt"></span><span id="inst-dash">&mdash; billed to my card on file</span><br><span class="opt" id="instopt"></span></label>
+    <label class="radio-card" id="rc-installments"><input type="radio" name="payplan" value="installments" checked> <span id="inst-head">Equal Payments </span><span class="sel-amt" id="instamt"></span><span id="inst-dash">&mdash; billed to my card on file</span><br><span class="opt" id="instopt"></span></label>
     <div id="cardprompt"></div>
     <label class="radio-card" id="rc-prepay"><input type="radio" name="payplan" value="prepay"> <span id="prepayhead">Prepay the full season</span> <span class="sel-amt" id="prepayamt"></span><span class="opt">(one single payment)</span></label>
     <div class="prepaybox" id="prepaybox">
@@ -194,6 +194,7 @@
       <div class="declinemsg" id="declinemsg"></div>
     </div>
 
+    <label class="radio-card" id="rc-payg" style="display:none"><input type="radio" name="payplan" value="payg"> <span id="payghead">Pay As You Go</span><span class="sel-amt" id="paygamt"></span><br><span class="opt" id="paygopt">Each completed visit is charged to your card on file &mdash; no charge when there is no service.</span></label>
     <div class="err" id="err"></div>
     <div class="cofbox" id="cofbox" style="display:none;"></div>
     <div id="payconfirm" style="display:none;"></div>
@@ -458,6 +459,17 @@
     // Residential: PAYG with card-on-file autocharge REQUIRED. Commercial/strata: per-visit invoicing, no card needed.
     var perVisit = (a.installments === 1);
     a.perVisit = perVisit;
+    // Pay As You Go (card autocharge per visit) is offered on residential quotes billed by
+    // equal payments or prepay — per-visit quotes already ARE pay-as-you-go, so no third card there.
+    if(isRes && !perVisit){
+      var paygCardEl = document.getElementById('rc-payg');
+      if(paygCardEl){
+        paygCardEl.style.display = 'block';
+        var pvPerVisit = (a.items || []).filter(function(it){ return it.rate > 0; })
+          .map(function(it){ return money(it.rate) + ' per ' + esc(it.name || 'visit'); }).join(', ');
+        document.getElementById('paygamt').textContent = pvPerVisit ? '\u2014 ' + pvPerVisit + ' ' : '\u2014 per visit ';
+      }
+    }
     // office-approved exception: invoiced PAYG without a card (Renewal Type pre-set 'Residential Pay As You Go - No Card Required')
     var paygInv = (a.payg_invoiced === true);
     a.paygInv = paygInv;
@@ -474,7 +486,7 @@
       ? (isRes ? 'How would you like to pay?' : 'How would you like to handle your billing?')
       : (isRes ? 'How would you like to pay for your season?' : 'How would you like to handle your billing?');
     document.getElementById('prepayhead').textContent = annual ? 'Prepay the year' : 'Prepay the full season';
-    document.getElementById('inst-head').textContent = isRes ? 'Monthly installments ' : 'Monthly invoicing ';
+    document.getElementById('inst-head').textContent = isRes ? 'Equal Payments ' : 'Monthly invoicing ';
     var rcI = document.getElementById('rc-installments');
     if(rcI) rcI.style.display = (Number(a.installments) > 1) ? '' : (season === 'summer' ? '' : '');
     document.getElementById('inst-dash').textContent = isRes ? '' : '\u2014 no card required';
@@ -511,7 +523,7 @@
     } else if(isRes){
       var cardBit = (a.hasCard && a.cardLast4) ? ' (&bull;&bull;&bull;&bull; ' + esc(a.cardLast4) + (a.cardExp ? ', expires ' + esc(a.cardExp) : '') + ')' : '';
       document.getElementById('instopt').innerHTML = (a.installments && a.installments > 1 && a.monthly)
-        ? a.installments + ' equal monthly installments of <b>' + money(a.monthly) + '</b> &mdash; billed to your card on file' + cardBit + ' automatically on ' + billDay() + ' of each month.'
+        ? 'Your season split into <b>' + a.installments + ' equal payments</b> of <b>' + money(a.monthly) + '</b> &mdash; billed to your card on file' + cardBit + ' automatically on ' + billDay() + ' of each month.'
         : 'Your renewal is confirmed right away. Your card is billed automatically on ' + billDay() + ' of each month.';
     } else {
       document.getElementById('instopt').innerHTML = (a.installments && a.installments > 1 && a.monthly)
@@ -560,7 +572,7 @@
     document.getElementById('prepaylink').href = qq ? ('https://card.kootenaylawndoctor.com/pay/?q=' + encodeURIComponent(qq)) : ('https://card.kootenaylawndoctor.com/pay/?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : ''));
     content.style.display='none';
     formwrap.style.display='block';
-    if(planP === 'prepay' || planP === 'installments'){
+    if(planP === 'prepay' || planP === 'installments' || planP === 'payg'){
       var pr = document.querySelector('input[name=payplan][value=' + planP + ']');
       if(pr){
         pr.checked = true;
@@ -689,6 +701,7 @@
     var box = document.getElementById('cofbox');
     var a = window.acct || {};
     var sel = (document.querySelector('input[name=payplan]:checked')||{}).value;
+    if(sel === 'payg') sel = 'installments';
     var cardUrl = 'https://card.kootenaylawndoctor.com/' + (qq ? ('?q=' + encodeURIComponent(qq)) : ('?t=' + encodeURIComponent(e)));
     if(sel === 'installments' && a.residential && a.perVisit && a.paygInv){
       // office-approved invoiced PAYG: card optional
@@ -757,11 +770,12 @@
     var box = document.getElementById('cardprompt');
     var pre = document.getElementById('prepaybox');
     var rci = document.getElementById('rc-installments');
-    var sel = (document.querySelector('input[name=payplan]:checked')||{}).value;
+    var selRaw = (document.querySelector('input[name=payplan]:checked')||{}).value;
+    var sel = (selRaw === 'payg') ? 'installments' : selRaw;
     var a = window.acct || {};
     pre.classList.toggle('show', sel === 'prepay');
     // amounts right in the selectors
-    if(a.installments && a.monthly){ document.getElementById('instamt').textContent = '\u2014 ' + (a.installments === 1 ? money(a.monthly) : a.installments + ' equal monthly payments of ' + money(a.monthly)) + ' '; }
+    if(a.installments && a.monthly){ document.getElementById('instamt').textContent = '\u2014 ' + (a.installments === 1 ? money(a.monthly) : money(a.monthly) + '/mo \u00b7 ' + a.installments + ' equal payments') + ' '; }
     if(a.total){ document.getElementById('prepayamt').textContent = '\u2014 ' + money(a.total) + ' '; }
     try { renderOrderSummary(); } catch(_) {}
     renderCofBox();
@@ -1037,7 +1051,8 @@
       return;
     }
     btn.dataset.busy = '1'; stopPoll();
-    var sel = (document.querySelector('input[name=payplan]:checked')||{}).value;
+    var selRaw = (document.querySelector('input[name=payplan]:checked')||{}).value;
+    var sel = (selRaw === 'payg') ? 'installments' : selRaw;
     if(sel === 'prepay'){
       showErr('Use the prepay options above to pay in one payment.');
       return;
@@ -1051,6 +1066,12 @@
     }
     var first = (a.first||'').trim(), last = (a.last||'').trim(), email = (a.email||'').trim();
     var lines;
+    if(a.residential && selRaw === 'payg'){
+      lines = ['REQUEST: Change payment plan.', 'PREFERRED: Pay-as-you-go per-visit billing with card-on-file autocharge.',
+               'RENEWAL CONFIRMED by client via pay-as-you-go (per-visit, card autocharge). (Confirmed from renewal email.)'];
+      var pvR = (a.items || []).filter(function(it){ return it.rate > 0; }).map(function(it){ return money(it.rate) + ' per ' + esc(it.name || 'visit'); }).join(', ');
+      if(pvR) lines.push('PER-VISIT RATES: ' + pvR.replace(/&mdash;/g,'-') + '.');
+    } else
     if(a.residential && a.perVisit && a.paygInv){
       lines = ['REQUEST: Change payment plan.', 'PREFERRED: Pay-as-you-go per-visit billing on INVOICED terms (office-approved, no card on file).',
                'RENEWAL CONFIRMED by client via pay-as-you-go (per-visit, invoiced). (Confirmed from renewal email.)'];
