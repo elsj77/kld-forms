@@ -217,6 +217,7 @@
   var API = 'https://doc-pro-781789de.base44.app/functions/snowChangeRequest';
   var API_PAY = 'https://doc-pro-781789de.base44.app/functions/snowRenewCharge';
   var API_UP  = 'https://doc-pro-781789de.base44.app/functions/summerUpsellPublic';
+  var API_RD  = 'https://doc-pro-781789de.base44.app/functions/summerRoundUpsell'; // missing-round add-ons
   var qs = new URLSearchParams(location.search);
   var e = (qs.get('t')||'').trim(); // secure per-client portal token (Sept 17 2026)
   var eq = (qs.get('e')||'').trim(); // estimate number hint (which of this client's quotes this email is about)
@@ -892,11 +893,18 @@
   function initUpsell(){
     var a = window.acct || {};
     if(!e) return; // token-driven (Oct 31 2026): upsell API keys on the portal token, not the q GUID
-    fetch(API_UP, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: e, mode:'quote' }) })
-      .then(function(r){ return r.json(); })
-      .then(function(u){
-        if(!u || u.error || u.has_winter_lines) return;
-        var list = (u.addons || []).filter(function(x){ return x && x.ready && Number(x.price) > 0; });
+    var callU = fetch(API_UP, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: e, mode:'quote' }) })
+      .then(function(r){ return r.json(); }).catch(function(){ return {}; });
+    var callR = fetch(API_RD, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: e, mode:'quote' }) })
+      .then(function(r){ return r.json(); }).catch(function(){ return {}; });
+    Promise.all([callU, callR]).then(function(res){
+        var u = res[0] || {}, rr = res[1] || {};
+        if(u.has_winter_lines || rr.has_winter_lines) return;
+        var rounds = (rr.addons || []).filter(function(x){ return x && x.price_ready && Number(x.price) > 0; })
+          .map(function(x){ return { key:x.key, name:x.name, price:Number(x.price), ready:true }; });
+        var others = ((u && u.addons) || []).filter(function(x){ return x && (x.price_ready || x.ready) && Number(x.price) > 0; })
+          .map(function(x){ return { key:x.key, name:x.name, price:Number(x.price), ready:true }; });
+        var list = rounds.concat(others);
         if(!list.length) return;
         window.upsellSel = window.upsellSel || {};
         var html = '<div class="s-t">Add these to your season <span style="font-weight:400;color:#475569;">&mdash; optional</span></div>';
@@ -936,10 +944,14 @@
       btn.disabled = true;
       var keep = btn.innerHTML;
       btn.innerHTML = '<span class="spinner"></span>Adding your services&hellip;';
-      fetch(API_UP, { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ token: e, mode:'apply', addons: picks, dry_run: false }) })
-        .catch(function(){})
-        .then(function(){ btn.disabled = false; btn.innerHTML = keep; btn.click(); });
+      var rPicks = picks.filter(function(x){ return /^round_/.test(x.key); });
+      var aPicks = picks.filter(function(x){ return !/^round_/.test(x.key); });
+      var sends = [];
+      if(aPicks.length) sends.push(fetch(API_UP, { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ token: e, mode:'apply', addons: aPicks, dry_run: false }) }).then(function(r){ return r.json(); }).catch(function(){ return {}; }));
+      if(rPicks.length) sends.push(fetch(API_RD, { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ token: e, mode:'apply', addons: rPicks, dry_run: false }) }).then(function(r){ return r.json(); }).catch(function(){ return {}; }));
+      Promise.all(sends).then(function(){ btn.disabled = false; btn.innerHTML = keep; btn.click(); });
       return;
     }
 
