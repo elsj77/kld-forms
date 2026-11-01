@@ -225,6 +225,8 @@
   var API_FL  = 'https://doc-pro-781789de.base44.app/functions/summerClientFlags'; // AccountType + no-card exception
   var API_RS  = 'https://doc-pro-781789de.base44.app/functions/renewResolve'; // quote GUID -> portal token (Oct 31 2026)
   var API_RADD= 'https://doc-pro-781789de.base44.app/functions/summerRoundAdd'; // adds + books every selected add-on
+  var API_APPLY= 'https://doc-pro-781789de.base44.app/functions/summerRenewalApply'; // packages + installment contract + prepay check
+  var API_LOG = 'https://doc-pro-781789de.base44.app/functions/portalAccessLog';
   window.__flagsP = (function(){
     var t0 = (new URLSearchParams(location.search).get('t') || '').trim();
     if(!t0) return Promise.resolve(null);
@@ -858,6 +860,44 @@
 
   // ── optional season add-ons (summer renewals only) ──
   var UP_BASE = null;
+  // ── accepted renewal: hand the whole selection to summerRenewalApply ──
+  // writes the packages at quoted rates, builds/folds the installment contract (creating one when the
+  // client has none), and for prepay proves the payment page total covers the add-ons before it opens.
+  function applyRenewal(mode){
+    try{
+      var a = window.acct || {}, pk = upSelected() || [];
+      var rounds = [], rate = null, addons = {};
+      pk.forEach(function(x){
+        var k = String(x.key || '');
+        var m = k.match(/^round_([1-4])$/);
+        if(m){ rounds.push(Number(m[1])); if(x.price) rate = Number(x.price); return; }
+        var kind = k.indexOf('granular') > -1 ? 'granular' : (k.indexOf('aeration') > -1 ? 'aeration' : null);
+        if(!kind) return;
+        var season = k.indexOf('spring') > -1 ? 'spring' : (k.indexOf('summer') > -1 ? 'summer' : (k.indexOf('fall') > -1 ? 'fall' : null));
+        addons[kind] = addons[kind] || { seasons: [], rate: Number(x.price || 0) };
+        if(season) addons[kind].seasons.push(season);
+        if(x.price) addons[kind].rate = Number(x.price);
+      });
+      if(!rounds.length && !Object.keys(addons).length) return;
+      var payload = { token: e, dry_run: false, confirm: true,
+        billing: { mode: mode, require_card: true },
+        lawn: { rounds: rounds, rate: rate },
+        addons: addons,
+        expected_total: Number(a.total || 0) };
+      if(mode === 'installments'){ payload.create_contract = { total: Number(a.total || 0), months: [5,6,7,8,9] }; }
+      fetch(API_APPLY, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+        .then(function(r){ return r.json(); })
+        .catch(function(err){ return { ok: false, error: String(err) }; })
+        .then(function(res){
+          if(res && res.ok === true) return;
+          try{
+            fetch(API_LOG, { method:'POST', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({ page: 'renew', mode: 'apply_failed', detail: JSON.stringify(res).slice(0, 800), estimate_number: (window.acct||{}).estNum || null }) });
+          }catch(_){}
+        });
+    }catch(_){}
+  }
+
   function upSelected(){
     var sel = window.upsellSel || {}, out = [];
     for(var k in sel){ if(sel[k]) out.push(sel[k]); }
@@ -1038,6 +1078,7 @@
         fetch(API_RADD, { method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ token: e, rounds: rn2, keys: sk2, dry_run: false, book: false }) })
           .catch(function(){ return {}; })
+          .then(function(){ applyRenewal(paymode === 'charge' ? 'autocharge' : 'prepay'); })
           .then(function(){ btn.disabled = false; btn.innerHTML = keep0; btn.click(); });
         return;
       }
@@ -1066,6 +1107,7 @@
     }
     var first = (a.first||'').trim(), last = (a.last||'').trim(), email = (a.email||'').trim();
     var lines;
+    applyRenewal(selRaw === 'payg' ? 'autocharge' : (selRaw === 'prepay' ? 'prepay' : 'installments'));
     if(a.residential && selRaw === 'payg'){
       lines = ['REQUEST: Change payment plan.', 'PREFERRED: Pay-as-you-go per-visit billing with card-on-file autocharge.',
                'RENEWAL CONFIRMED by client via pay-as-you-go (per-visit, card autocharge). (Confirmed from renewal email.)'];
