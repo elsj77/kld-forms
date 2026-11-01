@@ -705,10 +705,17 @@
         box.innerHTML = sched;
         updateSubmitState(false);
       } else {
+        // RESIDENTIAL, no card yet: state the requirement explicitly (Oct 31 2026)
         rci.classList.add('warn');
-        box.innerHTML = '';
         startPoll();
         updateSubmitState(true);
+        var addCardUrl = 'https://card.kootenaylawndoctor.com/' + (qq ? ('?q=' + encodeURIComponent(qq)) : ('?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : '')));
+        box.innerHTML = '<div class="cofbox need" style="display:block;margin-top:12px;">'
+          + '<p class="cof-t">Card on file required</p>'
+          + '<p style="margin-bottom:10px;">Residential renewals are billed automatically to a card on file. Add your card below and this page updates, or choose <b>Prepay the full season</b> to pay once instead. Invoiced terms are available only with office approval.</p>'
+          + '<a class="btn-inline" href="' + addCardUrl + '" target="_blank" rel="noopener">Add a Card on File &rarr;</a>'
+          + '<p class="small" style="margin-top:10px;margin-bottom:0;">Your renewal cannot be confirmed until a card is saved or you prepay.</p>'
+          + '</div>';
       }
     } else if(sel === 'installments' && !a.residential) {
       // COMMERCIAL: invoicing — no card required; card = optional auto-billing
