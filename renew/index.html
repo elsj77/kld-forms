@@ -132,6 +132,33 @@
     .kf-sites{flex-direction:column;gap:8px;}
     .kf-sites a{padding:0;}
   }
+  /* floating order summary (Oct 31 2026) */
+  #osum{position:fixed;right:20px;top:20px;width:340px;max-height:calc(100vh - 40px);overflow:auto;background:#fff;border:1px solid #dbe7dd;border-radius:12px;box-shadow:0 10px 30px rgba(20,83,45,.15);padding:16px;font-size:13px;color:#1e293b;display:none;z-index:60;}
+  #osum.show{display:block;}
+  #osum h3{margin:0 0 2px;font-size:15px;color:#166534;}
+  #osum .osub{font-size:12px;color:#64748b;margin:0 0 10px;}
+  #osum .oline{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed #e6efe8;}
+  #osum .oline .nm{flex:1 1 auto;}
+  #osum .oline .nm small{display:block;color:#94a3b8;font-size:11px;font-weight:400;}
+  #osum .oline.addon{background:#f4fbf6;border-radius:6px;padding:6px 8px;border-bottom:none;margin-top:4px;}
+  #osum .otot{display:flex;justify-content:space-between;padding:4px 0;}
+  #osum .otot.sum{border-top:1px solid #dbe7dd;margin-top:6px;padding-top:8px;}
+  #osum .otot.grand{font-weight:800;font-size:15px;color:#14532d;}
+  #osum .osel{margin-top:12px;background:#f4fbf6;border:1px solid #cfe8d8;border-radius:8px;padding:10px;}
+  #osum .osel b{display:block;font-size:13px;color:#166534;margin-bottom:3px;}
+  #osum .osel span{font-size:12px;color:#334155;line-height:1.45;display:block;}
+  #osum .oact{margin-top:12px;}
+  #osum .oact button{width:100%;background:#16a34a;color:#fff;border:none;border-radius:8px;padding:13px 14px;font-weight:800;font-size:14px;cursor:pointer;}
+  #osum .oact button:hover{background:#15803d;}
+  #osum .oact button[disabled]{background:#a7d7b9;cursor:not-allowed;}
+  #osum .onote{margin-top:8px;font-size:11px;color:#64748b;line-height:1.45;}
+  #osum .ocollapse{position:absolute;right:10px;top:6px;background:none;border:none;font-size:17px;color:#94a3b8;cursor:pointer;display:none;}
+  @media(min-width:1200px){ body.osum-on .wrap{padding-right:396px;} }
+  @media(max-width:1199px){
+    #osum{left:12px;right:12px;width:auto;top:auto;bottom:10px;max-height:58vh;}
+    #osum.osum-min .obody{display:none;}
+    #osum .ocollapse{display:block;}
+  }
 </style>
 </head><body><div class="wrap">
 <div class="card" id="main">
@@ -184,6 +211,7 @@
       </div>
     </div></div>
 </div>
+<div id="osum"><button class="ocollapse" id="osumToggle" type="button" aria-label="Toggle summary">&#9662;</button><div class="obody" id="osumBody"></div></div>
 <script>
 (function(){
   var API = 'https://doc-pro-781789de.base44.app/functions/snowChangeRequest';
@@ -369,6 +397,7 @@
     var sc = SEASON_CFG[season];
     var annual = (season === 'annual');
     var seasonWord = annual ? 'services' : 'season';
+    window.__seasonWord = seasonWord;
     a.annualMode = annual;
     // payment phrase: snow keeps the ratified "2026–27 snow season"; spring/summer/fall read
     // "<year> <season> season" (start-year when known); annual reads "year".
@@ -400,6 +429,8 @@
       : (isRes ? 'How would you like to pay for your season?' : 'How would you like to handle your billing?');
     document.getElementById('prepayhead').textContent = annual ? 'Prepay the year' : 'Prepay the full season';
     document.getElementById('inst-head').textContent = isRes ? 'Monthly installments ' : 'Monthly invoicing ';
+    var rcI = document.getElementById('rc-installments');
+    if(rcI) rcI.style.display = (Number(a.installments) > 1) ? '' : (season === 'summer' ? '' : '');
     document.getElementById('inst-dash').textContent = isRes ? '' : '\u2014 no card required';
     document.getElementById('submitbtn').innerHTML = isRes ? 'Confirm My Renewal &nbsp;&rarr;' : 'Accept My Proposal &nbsp;&rarr;';
     window.footDefault = null;
@@ -417,10 +448,16 @@
     document.getElementById('termsline').style.display = 'block';
 
     if(perVisit){
-      document.getElementById('rc-prepay').style.display = 'none';
-      document.getElementById('prepaybox').style.display = 'none';
+      // Summer renewals with a single installment: per-service card billing OR prepay (Ethan, Oct 31 2026)
+      var osumSummer = (season === 'summer');
+      if(!osumSummer){
+        document.getElementById('rc-prepay').style.display = 'none';
+        document.getElementById('prepaybox').style.display = 'none';
+      }
       document.getElementById('payhead').textContent = isRes ? 'How your pay-as-you-go billing works' : 'How your per-visit billing works';
-      document.getElementById('inst-head').innerHTML = isRes ? 'Pay as you go &mdash; billed per visit ' : 'Per-visit invoicing ';
+      document.getElementById('inst-head').innerHTML = osumSummer
+        ? (isRes ? 'Automatic billing per service &mdash; card on file ' : 'Automatic billing per service ')
+        : (isRes ? 'Pay as you go &mdash; billed per visit ' : 'Per-visit invoicing ');
       document.getElementById('inst-dash').textContent = (isRes && !paygInv) ? '' : '\u2014 no card required';
       document.getElementById('instopt').innerHTML = (isRes && !paygInv)
         ? 'You&rsquo;re charged <b>only for visits performed</b>' + (perVisitRates ? ' &mdash; ' + perVisitRates : '') + ' &mdash; billed automatically to your card on file after each visit.'
@@ -523,6 +560,7 @@
     }).catch(function(){ if(cb) cb(false); });
   }
   function updateSubmitState(blocked){
+    window.__submitBlocked = blocked === true;
     var btn = document.getElementById('submitbtn');
     var wasPay = !!btn.dataset.paymode; // leaving prepay mode → must restore the standard label even though the button is enabled (Sept 18 fix)
     btn.dataset.paymode = '';
@@ -679,6 +717,7 @@
     // amounts right in the selectors
     if(a.installments && a.monthly){ document.getElementById('instamt').textContent = '\u2014 ' + (a.installments === 1 ? money(a.monthly) : a.installments + ' equal monthly payments of ' + money(a.monthly)) + ' '; }
     if(a.total){ document.getElementById('prepayamt').textContent = '\u2014 ' + money(a.total) + ' '; }
+    try { renderOrderSummary(); } catch(_) {}
     renderCofBox();
     if(sel === 'installments' && a.residential && a.perVisit && a.paygInv && !a.hasCard){
       // office-approved invoiced PAYG: no card wall
@@ -764,6 +803,60 @@
     for(var k in sel){ if(sel[k]) out.push(sel[k]); }
     return out;
   }
+
+  // ── floating order summary (Oct 31 2026) ──────────────────────────────────
+  function osumSelected(){
+    var sel = window.upsellSel || {}, out = [];
+    Object.keys(sel).forEach(function(k){ if(sel[k]) out.push(sel[k]); });
+    return out;
+  }
+  function osumPaymentLine(tot){
+    var a = window.acct || {};
+    var nInst = Number(a.installments) || 1;
+    var mode = (document.querySelector('input[name=payplan]:checked')||{}).value || 'installments';
+    if(mode === 'prepay') return { head: 'Prepay in full', body: money(tot) + ' in one payment today.' };
+    if(nInst > 1) return { head: nInst + ' monthly payments', body: money(Math.round(tot*100/nInst)/100) + ' per month to your card on file.' };
+    return { head: 'Automatic billing per service', body: 'Each visit is charged to your card on file when the service is completed.' };
+  }
+  function renderOrderSummary(){
+    var a = window.acct || {}, box = document.getElementById('osum'), body = document.getElementById('osumBody');
+    if(!box || !body) return;
+    if(!a.items || !a.items.length){ box.classList.remove('show'); document.body.classList.remove('osum-on'); return; }
+    var addons = osumSelected();
+    var addTotal = addons.reduce(function(t,x){ return t + Number(x.price||0); }, 0);
+    var baseSub = Number((window.UP_BASE && UP_BASE.sub) || a.subtotal || 0);
+    var sub = Math.round((baseSub + addTotal)*100)/100;
+    var gst = Math.round(sub * 0.05 * 100)/100;
+    var tot = Math.round((sub + gst)*100)/100;
+    var h = '<h3>Your ' + (window.__seasonWord || 'season') + ' summary</h3><p class="osub">Everything you are confirming</p>';
+    a.items.forEach(function(it){
+      if(!it || !Number(it.rate)) return;
+      var amt = (it.total != null) ? Number(it.total) : Number(it.rate) * (Number(it.qty)||1);
+      h += '<div class="oline"><div class="nm">' + esc(it.name||'Service') + '<small>' + (Number(it.qty)>1 ? (Number(it.qty) + ' &times; ' + money(it.rate)) : money(it.rate) + ' each') + '</small></div><div>' + money(amt) + '</div></div>';
+    });
+    addons.forEach(function(x){
+      h += '<div class="oline addon"><div class="nm"><b>' + esc(x.name) + '</b><small>Add-on</small></div><div>' + money(x.price) + '</div></div>';
+    });
+    h += '<div class="otot sum"><span>Subtotal</span><span>' + money(sub) + '</span></div>';
+    h += '<div class="otot"><span>GST (5%)</span><span>' + money(gst) + '</span></div>';
+    h += '<div class="otot grand"><span>Total</span><span>' + money(tot) + '</span></div>';
+    var pay = osumPaymentLine(tot);
+    h += '<div class="osel"><b>' + pay.head + '</b><span>' + pay.body + '</span></div>';
+    var blocked = window.__submitBlocked === true;
+    h += '<div class="oact"><button id="osumGo" type="button"' + (blocked ? ' disabled' : '') + '>' + (blocked ? 'Add a card above to confirm' : 'Confirm &amp; Accept &nbsp;&rarr;') + '</button></div>';
+    h += '<p class="onote">GST included above. Adding or removing services updates this summary instantly.</p>';
+    body.innerHTML = h;
+    box.classList.add('show');
+    if(window.innerWidth >= 1200) document.body.classList.add('osum-on');
+    var go = document.getElementById('osumGo');
+    if(go) go.addEventListener('click', function(){ var b = document.getElementById('submitbtn'); if(b) b.click(); });
+  }
+  window.renderOrderSummary = renderOrderSummary;
+  (function(){
+    var tb = document.getElementById('osumToggle'), box = document.getElementById('osum');
+    if(tb && box) tb.addEventListener('click', function(){ box.classList.toggle('osum-min'); });
+  })();
+
   function upTotals(){
     var a = window.acct || {};
     if(!UP_BASE){ UP_BASE = { sub: Number(a.subtotal || a.total || 0), tax: Number(a.tax || 0), tot: Number(a.total || 0) }; }
@@ -782,8 +875,8 @@
     // keep every amount on the page in step with the add-ons (Oct 31 2026)
     var nInst = Number(a.installments) || 1;
     a.monthly = nInst > 1 ? Math.round(tot * 100 / nInst) / 100 : tot;
-    try { if(typeof schedHtml === 'function') schedHtml(); } catch(_) {}
     try { updateCardPrompt(); } catch(_) {}
+    try { renderOrderSummary(); } catch(_) {}
   }
   function initUpsell(){
     var a = window.acct || {};
@@ -821,6 +914,7 @@
       .catch(function(){});
   }
 
+  try { renderOrderSummary(); } catch(_) {}
   document.getElementById('submitbtn').addEventListener('click', function(){
     errEl.style.display='none';
     var btn = this;
