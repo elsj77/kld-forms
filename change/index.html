@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Change or Cancel Your Snow Season — Kootenay Lawn Doctor</title>
+<title>Change or Cancel Your Season — Kootenay Lawn Doctor</title>
 <style>
   body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f8;margin:0;padding:24px 16px;}
   .wrap{max-width:640px;margin:0 auto;}
@@ -95,7 +95,7 @@
   <div class="pagehead">
     <img src="../logo.png" alt="Kootenay Lawn Doctor logo">
     <div>
-      <h1 id="maintitle">Change or Cancel Your Snow Season</h1>
+      <h1 id="maintitle">Change or Cancel Your Season</h1>
       <p class="pagesub">Kootenay Lawn Doctor &middot; Mow &amp; Snow &middot; Blue Spruce</p>
     </div>
   </div>
@@ -108,7 +108,7 @@
     <h2 style="margin-top:0;">What would you like to do?</h2>
     <label class="radio-card"><input type="radio" name="choice" value="0"> Adjust my services <span class="opt">(add/remove a service, change frequency)</span></label>
     <label class="radio-card"><input type="radio" name="choice" value="1"> Change my payment plan</label>
-    <label class="radio-card"><input type="radio" name="choice" value="2"> <span id="cancellabel">Cancel my snow season</span></label>
+    <label class="radio-card"><input type="radio" name="choice" value="2"> <span id="cancellabel">Cancel my season</span></label>
     <label class="radio-card"><input type="radio" name="choice" value="3"> Something else</label>
 
     <div class="section" id="sec-0">
@@ -247,12 +247,13 @@
             var po = document.getElementById('prepayonline');
             if(po) po.textContent = annual ? 'Prepay the year online' : 'Prepay the full season online';
           }
-        }).catch(function(){ /* mode detection optional — keep snow wording */ });
+          if(window.revealForm) window.revealForm();
+        }).catch(function(){ if(window.revealForm) window.revealForm(); });
       var who = document.getElementById('who');
       who.innerHTML = '<p class="lbl">Confirming details for</p>'
         + '<div class="acct-row1">'
         + '<span class="acct-name">' + esc([j.first,j.last].filter(Boolean).join(' ')) + '</span>'
-        + '<span class="quote" id="quotelabel">Snow renewal #' + esc(j.number || '') + '</span>'
+        + '<span class="quote" id="quotelabel">Renewal #' + esc(j.number || '') + '</span>'
         + (j.total ? '<span class="total" id="totallabel">Season total $' + Number(j.total).toFixed(2) + '</span>' : '')
         + '</div>'
         + '<div class="acct-row2">'
@@ -262,7 +263,13 @@
         + '</div>';
       who.style.display='block';
       content.style.display='none';
-      formwrap.style.display='block';
+      window.revealForm = function(){
+        if(window.__formShown) return;
+        window.__formShown = true;
+        content.style.display='none';
+        formwrap.style.display='block';
+      };
+      setTimeout(window.revealForm, 2200);
     })
     .catch(function(){ fail('Connection problem &mdash; please try again in a few minutes, or call our office.'); });
 
@@ -327,7 +334,7 @@
       if(n) lines.push('DETAILS: ' + n);
     } else if(choice === '2'){
       var _s = String((window.acct || {}).season || 'snow');
-      lines.push('REQUEST: Cancel ' + ((window.acct || {}).annualMode ? 'renewal' : (SEASON_TAGS[_s] ? SEASON_TAGS[_s].name : 'snow season')) + '.');
+      lines.push('REQUEST: Cancel ' + ((window.acct || {}).annualMode ? 'renewal' : (SEASON_TAGS[_s] ? SEASON_TAGS[_s].name : 'season')) + '.');
       var reason = document.getElementById('cancel-reason').value;
       var otherR = document.getElementById('cancel-other').value.trim();
       lines.push('REASON: ' + reason + ((reason === 'Other' && otherR) ? ' — ' + otherR : '') + '.');
