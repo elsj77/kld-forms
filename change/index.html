@@ -223,7 +223,9 @@
             } else {
               var txt = items.map(function(it){ return String(it.name||'') + ' ' + String(it.desc||''); }).join(' ');
               var snowKw = /snow|plow|plough|sand|shovel|sweep|de-?ice|salt|windrow/i;
+              var heatKw = /lawn|mow|mowing|spray|fertiliz|granular|aeration|weed|irrigat|clean ?up/i;
               if (p.depthTrigger || snowKw.test(txt)) season = 'snow';
+              else if (heatKw.test(txt)) season = 'summer';
               else if (/spring|kickstart/i.test(txt)) season = 'spring';
               else if (/summer/i.test(txt)) season = 'summer';
               else if (/\bfall\b|autumn|leaf/i.test(txt)) season = 'fall';
@@ -233,9 +235,7 @@
             var annual = (season === 'annual');
             window.acct.season = season;
             window.acct.annualMode = annual;
-            document.title = annual ? 'Change or Cancel Your Renewal — Kootenay Lawn Doctor' : 'Change or Cancel Your ' + st.cap + ' Season — Kootenay Lawn Doctor';
-            var h1 = document.getElementById('maintitle');
-            if(h1) h1.textContent = annual ? 'Change or Cancel Your Renewal' : 'Change or Cancel Your ' + st.cap + ' Season';
+            // heading + title stay season-neutral so nothing visibly flips after load
             var ql = document.getElementById('quotelabel');
             if(ql) ql.textContent = st.tagRes + (window.acct.number || '');
             var tl = document.getElementById('totallabel');
