@@ -218,7 +218,7 @@
             var items = p.items || [];
             // server season (doc-driven) first; item-keyword fallback for older payloads
             var season;
-            if (p.season && SEASON_TAGS[p.season]) {
+            if (p.season && SEASON_TAGS[p.season] && p.season !== 'annual') {
               season = p.season;
             } else {
               var txt = items.map(function(it){ return String(it.name||'') + ' ' + String(it.desc||''); }).join(' ');
