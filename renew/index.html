@@ -570,35 +570,8 @@
     }
 
     // ── services included (top of page) ──
-    var svc = document.getElementById('services');
-    if(a.items && a.items.length){
-      var rows = '';
-      a.items.forEach(function(it){
-        // package header row (no price) — the priced children follow beneath it
-        if(it.group){
-          rows += '<div class="s-g">' + esc(it.name || 'Package') + '</div>';
-          return;
-        }
-        var sub = !!it.parent;
-        var rateBit = sub ? '' : ('<span class="s-m">' + (it.qty ? money(it.rate) + ' &times; ' + it.qty + (it.qty > 1 ? ' visits' : ' visit') : money(it.rate)) + '</span>');
-        rows += '<div class="s-r' + (sub ? ' s-sub' : '') + '"><div class="s-l">'
-          + '<div class="s-n">' + esc(it.name || 'Service') + '</div>'
-          + (it.desc ? '<div class="s-d">' + serviceDescriptionHtml(it.desc) + '</div>' : '')
-          + '</div><div class="s-r2"><b>' + money(it.total) + '</b>' + rateBit
-          + '</div></div>';
-      });
-      var trig = (a.depthTrigger && season === 'snow')
-        ? '<div style="font-size:12px;color:#475569;padding:10px 14px;border-bottom:1px solid #eef1f5;background:#f8fafc;">Snow services on your route are automatically triggered at <b>' + esc(a.depthTrigger) + '</b> of snowfall.</div>'
-        : '';
-      var sum = '<div class="s-sum" id="sumblock">'
-        + '<div class="row"><span>' + (annual ? 'Subtotal' : 'Season subtotal') + '</span><span>' + money(a.subtotal || a.total) + '</span></div>'
-        + (a.tax ? '<div class="row"><span>GST</span><span>' + money(a.tax) + '</span></div>' : '')
-        + '<div class="row grand"><span>' + (annual ? 'Total Cost' : 'Total season cost') + '</span><span>' + money(a.total) + '</span></div>'
-        + '</div>';
-      svc.innerHTML = '<div class="s-t">' + (annual ? 'What&rsquo;s included in your renewal' : 'What&rsquo;s included in your season') + '</div>' + rows + trig + sum;
-      svc.style.display = 'block';
-      if(season === 'summer'){ initUpsell(); }
-    }
+    renderServicesBlock();
+    if(season === 'summer'){ initUpsell(); }
 
     var who = document.getElementById('who');
     who.innerHTML = '<p class="lbl">' + (isRes ? 'Confirming your renewal for' : 'Accepting your proposal for') + '</p>'
@@ -830,6 +803,8 @@
     if(a.installments && a.monthly){ document.getElementById('instamt').textContent = '' + (a.installments === 1 ? money(a.monthly) : money(a.monthly) + '/mo \u00b7 ' + a.installments + ' equal payments') + ' '; }
     if(a.total){ document.getElementById('prepayamt').textContent = '' + money(a.total) + ' '; }
     try { renderCofBox(); } catch(_) {}
+    try { if(window.renderServicesBlock) window.renderServicesBlock(); } catch(_) {}
+    try { if(window.paintSum) window.paintSum(); } catch(_) {}
 
     if(sel === 'prepay'){
       stopPoll();
@@ -973,9 +948,15 @@
     addons.forEach(function(x){
       h += '<div class="oline addon"><div class="nm"><b>' + esc(x.name) + '</b><small>Add-on</small></div><div>' + money(x.price) + '</div></div>';
     });
-    h += '<div class="otot sum"><span>Subtotal</span><span>' + money(sub) + '</span></div>';
-    h += '<div class="otot"><span>GST (5%)</span><span>' + money(gst) + '</span></div>';
-    h += '<div class="otot grand"><span>Total</span><span>' + money(tot) + '</span></div>';
+    if(withGst){
+      h += '<div class="otot sum"><span>Payment method</span><span>Card on file</span></div>';
+      h += '<div class="otot"><span>Charged</span><span>After each service</span></div>';
+      h += '<div class="otot grand"><span>Amount charged</span><span>The per visit prices</span></div>';
+    } else {
+      h += '<div class="otot sum"><span>Subtotal</span><span>' + money(sub) + '</span></div>';
+      h += '<div class="otot"><span>GST (5%)</span><span>' + money(gst) + '</span></div>';
+      h += '<div class="otot grand"><span>Total</span><span>' + money(tot) + '</span></div>';
+    }
     var nInst0 = Number(a.installments) || 1;
     var curMode = (document.querySelector('input[name=payplan]:checked')||{}).value || 'installments';
     var chips = [];
@@ -1001,8 +982,10 @@
       ? ('Prepay ' + money(tot) + ' &nbsp;&rarr;')
       : (blocked ? 'Add a card to confirm &nbsp;&rarr;' : 'Confirm &amp; Accept &nbsp;&rarr;');
     h += '<div class="oact"><button id="osumGo" type="button"' + (blocked ? ' class="is-warn"' : '') + '>' + goLabel + '</button></div>';
-    h += '<p class="onote">GST included above. Adding or removing services updates this summary instantly.'
-       + (blocked ? ' A card on file is needed at checkout . The payment section explains why.' : '') + '</p>';
+    h += '<p class="onote">' + (withGst
+        ? 'Per visit prices above already include GST. Nothing is charged unless a service happens.'
+        : 'GST included above. Adding or removing services updates this summary instantly.')
+       + (blocked ? ' A card on file is needed at checkout. The payment section explains why.' : '') + '</p>';
     body.innerHTML = h;
     box.classList.add('show');
     if(window.innerWidth >= 1360) document.body.classList.add('osum-on');
@@ -1030,6 +1013,61 @@
     if(tb && box) tb.addEventListener('click', function(){ box.classList.toggle('osum-min'); });
   })();
 
+  // the season service list + totals; repainted whenever the plan changes so the
+  // pay-as-you-go view can show GST-included per visit prices instead of season totals
+  function renderServicesBlock(){
+    var a = window.acct || {};
+    var svc = document.getElementById('services');
+    if(!(a.items && a.items.length)) return;
+    var annual = (a.season === 'annual');
+    var paygSel = ((document.querySelector('input[name=payplan]:checked') || {}).value === 'payg');
+    var rows = '';
+    a.items.forEach(function(it){
+      if(it.group){ rows += '<div class="s-g">' + esc(it.name || 'Package') + '</div>'; return; }
+      var sub = !!it.parent;
+      var rate = Number(it.rate || 0);
+      var total = Number(it.total || 0);
+      if(paygSel && rate > 0) total = Math.round(rate * 1.05 * 100) / 100;   // per visit, GST in
+      var rateBit = paygSel
+        ? (rate > 0 ? '<span class="s-m">per visit, GST included</span>' : '')
+        : (sub ? '' : '<span class="s-m">' + (it.qty ? money(it.rate) + ' &times; ' + it.qty + (it.qty > 1 ? ' visits' : ' visit') : money(it.rate)) + '</span>');
+      rows += '<div class="s-r' + (sub ? ' s-sub' : '') + '"><div class="s-l">'
+        + '<div class="s-n">' + esc(it.name || 'Service') + '</div>'
+        + (it.desc ? '<div class="s-d">' + serviceDescriptionHtml(it.desc) + '</div>' : '')
+        + '</div><div class="s-r2"><b>' + money(total) + '</b>' + rateBit
+        + '</div></div>';
+    });
+    var trig = (a.depthTrigger && a.season === 'snow')
+      ? '<div style="font-size:12px;color:#475569;padding:10px 14px;border-bottom:1px solid #eef1f5;background:#f8fafc;">Snow services on your route are automatically triggered at <b>' + esc(a.depthTrigger) + '</b> of snowfall.</div>'
+      : '';
+    svc.innerHTML = '<div class="s-t">' + (annual ? 'What&rsquo;s included in your renewal' : 'What&rsquo;s included in your season') + '</div>'
+      + rows + trig + '<div id="sumwrap">' + sumBlockHtml() + '</div>';
+    svc.style.display = 'block';
+  }
+  window.renderServicesBlock = renderServicesBlock;
+
+  // season totals, or the card-on-file billing block when pay-as-you-go is selected
+  function sumBlockHtml(){
+    var a = window.acct || {};
+    var annual = (a.season === 'annual');
+    var paygSel = ((document.querySelector('input[name=payplan]:checked') || {}).value === 'payg');
+    if(paygSel){
+      return '<div class="s-sum" id="sumblock">'
+        + '<div class="row"><span>Payment method</span><span>Card on file</span></div>'
+        + '<div class="row"><span>When you are charged</span><span>After each completed service</span></div>'
+        + '<div class="row grand"><span>Amount charged</span><span>The per visit prices above</span></div>'
+        + '</div>'
+        + '<div class="s-note" style="padding:9px 14px;">GST is already included in those per visit prices. Nothing is charged unless a service happens.</div>';
+    }
+    return '<div class="s-sum" id="sumblock">'
+      + '<div class="row"><span>' + (annual ? 'Subtotal' : 'Season subtotal') + '</span><span>' + money(a.subtotal || a.total) + '</span></div>'
+      + (a.tax ? '<div class="row"><span>GST</span><span>' + money(a.tax) + '</span></div>' : '')
+      + '<div class="row grand"><span>' + (annual ? 'Total Cost' : 'Total season cost') + '</span><span>' + money(a.total) + '</span></div>'
+      + '</div>';
+  }
+  function paintSum(){ var w = document.getElementById('sumwrap'); if(w) w.innerHTML = sumBlockHtml(); }
+  window.paintSum = paintSum;
+
   function upTotals(){
     var a = window.acct || {};
     if(!UP_BASE){ UP_BASE = { sub: Number(a.subtotal || a.total || 0), tax: Number(a.tax || 0), tot: Number(a.total || 0) }; }
@@ -1038,7 +1076,10 @@
     var gstAdd = Math.round(add * 0.05 * 100) / 100;
     var sub = UP_BASE.sub + add, tot = UP_BASE.tot + add + gstAdd;
     var block = document.getElementById('sumblock');
-    if(block){
+    var paygNow = ((document.querySelector('input[name=payplan]:checked') || {}).value === 'payg');
+    if(block && paygNow){
+      paintSum();
+    } else if(block){
       block.innerHTML =
         '<div class="row"><span>Season subtotal</span><span>' + money(sub) + '</span></div>'
         + (UP_BASE.tax ? '<div class="row"><span>GST</span><span>' + money(UP_BASE.tax + gstAdd) + '</span></div>' : '')
@@ -1057,8 +1098,11 @@
     var a = window.acct || {};
     if(!estNo && a.number) estNo = String(a.number);
     var o = { mode:'quote' };
-    if(e) o.token = e;
+    // send the estimate identity first: the token branch prices nothing (->
+    // every add-on comes back ready:false), so it is only a last resort.
     if(estId) o.estimate_id = estId;
+    else if(estNo) o.estimate_number = estNo;
+    else if(e) o.token = e;
     if(custId) o.customer_id = custId;
     if(estNo) o.estimate_number = estNo;
     return o;
@@ -1086,12 +1130,27 @@
         var u = res[0] || {}, rr = res[1] || {};
         var holder = document.getElementById('upsell');
         if(u.has_winter_lines || rr.has_winter_lines){ if(holder){ holder.style.display = 'none'; holder.innerHTML = ''; } return; }
-        function norm(x){ return { key:x.key, name:x.name, price:Number(x.price), ready:true }; }
-        function ok(x){ return x && x.key && (x.price_ready || x.ready) && Number(x.price) > 0; }
+        function num(v){ return Number(String(v == null ? '' : v).replace(/[^0-9.\-]/g, '')); }
+        function norm(x){ return { key:x.key, name:x.name, price:num(x.price), ready:true }; }
+        function ok(x){ return x && x.key && num(x.price) > 0; }
+        // standard-band rule (matches the backend): granular = round rate + 20, aeration = round rate
+        function localFallback(){
+          var items = (window.acct && window.acct.items) || [];
+          var rates = items.map(function(i){ return num(i.rate); }).filter(function(r){ return r > 0; });
+          var P = rates.length ? Math.max.apply(null, rates) : 0;
+          if(!P) return [];
+          return [
+            { key:'spring_granular', name:'Spring Granular Fertilizer', price:P + 20, ready:true },
+            { key:'fall_granular',   name:'Fall Granular Fertilizer',   price:P + 20, ready:true },
+            { key:'spring_aeration', name:'Aeration - Spring',          price:P,      ready:true },
+            { key:'fall_aeration',   name:'Aeration - Fall',            price:P,      ready:true }
+          ];
+        }
         var rounds = ((rr && rr.addons) || []).filter(ok).map(norm);
         var others = ((u && u.addons) || []).filter(ok).map(norm);
         var seen = {}, list = [];
         rounds.concat(others).forEach(function(x){ if(!seen[x.key]){ seen[x.key] = 1; list.push(x); } });
+        if(!list.length) list = localFallback();
         if(!list.length){
           // never hide on a transient failure: back off and try again before giving up
           var wait = [1000, 3000, 7000, 12000][attempt];
