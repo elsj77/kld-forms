@@ -106,6 +106,10 @@
   .svc .s-d li{margin:2px 0;}
   .svc .s-r2{color:#0f2338;white-space:nowrap;text-align:right;}
   .svc .s-m{display:block;color:#8a94a0;font-size:11px;font-weight:400;}
+  .svc .s-g{padding:11px 14px 5px;font-size:13px;font-weight:700;color:#0f2338;background:#f4f7f9;border-bottom:1px solid #eef1f5;}
+  .svc .s-g:first-child{padding-top:12px;}
+  .svc .s-r.s-sub{padding-left:28px;background:#fcfdfe;}
+  .svc .s-r.s-sub .s-n{font-weight:600;font-size:13px;color:#243447;}
   .svc .s-sum{background:#f8fafc;border-top:1px solid #dfe6ec;padding:9px 14px;font-size:13px;color:#475569;}
   .svc .s-sum .row{display:flex;justify-content:space-between;padding:3px 0;}
   .svc .s-sum .row.grand{color:#0369a1;font-weight:800;font-size:14px;padding-top:7px;}
@@ -156,8 +160,12 @@
   #osum .oact button[disabled]{background:#a7d7b9;cursor:not-allowed;}
   #osum .onote{margin-top:8px;font-size:11px;color:#64748b;line-height:1.45;}
   #osum .ocollapse{position:absolute;right:10px;top:6px;background:none;border:none;font-size:17px;color:#94a3b8;cursor:pointer;display:none;}
-  @media(min-width:1200px){ body.osum-on .wrap{padding-right:396px;} }
-  @media(max-width:1199px){
+  /* side summary: keep the content column centred and float the panel to its right
+     (the old right padding dragged the column off-centre) */
+  @media(min-width:1360px){
+    #osum{left:calc(50% + 336px);right:auto;top:24px;width:340px;}
+  }
+  @media(max-width:1359px){
     #osum{left:12px;right:12px;width:auto;top:auto;bottom:10px;max-height:58vh;}
     #osum.osum-min .obody{display:none;}
     #osum .ocollapse{display:block;}
@@ -247,6 +255,10 @@
   // (Oct 31 2026, Ethan: proposal #10332 showed wrong services and no add-ons).
   var legacyQ = qs.get('legacy') === '1';
   var estNo = eq; // estimate-number hint: SAP's own ID for this quote
+  // SAP's own identifiers for the estimate (Nov 5 2026: no minted tokens — the portal
+  // addresses the estimate by the ID/number SAP generated for it).
+  var estId = (qs.get('i')||'').trim();
+  var custId = (qs.get('c')||'').trim();
   if(!e && qq && !legacyQ){
     fetch(API_RS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ q: qq }) })
       .then(function(r){ return r.json(); })
@@ -254,8 +266,11 @@
         // The estimate is identified by SAP's own ID for it, never by a minted token:
         // renewResolve returns the quote's estimate number, so carry it as the ?e= hint.
         estNo = eq || (j && j.estimate_number ? String(j.estimate_number) : '');
+        estId  = (j && j.estimate_id) ? String(j.estimate_id) : estId;
+        custId = (j && j.customer_id) ? String(j.customer_id) : custId;
         if(j && j.token){
-          var next = '?t=' + encodeURIComponent(j.token) + (estNo ? '&e=' + encodeURIComponent(estNo) : '');
+          var next = '?t=' + encodeURIComponent(j.token) + (estNo ? '&e=' + encodeURIComponent(estNo) : '')
+            + (estId ? '&i=' + encodeURIComponent(estId) : '') + (custId ? '&c=' + encodeURIComponent(custId) : '');
           location.replace(next);
           return;
         }
@@ -542,11 +557,17 @@
     if(a.items && a.items.length){
       var rows = '';
       a.items.forEach(function(it){
-        rows += '<div class="s-r"><div class="s-l">'
+        // package header row (no price) — the priced children follow beneath it
+        if(it.group){
+          rows += '<div class="s-g">' + esc(it.name || 'Package') + '</div>';
+          return;
+        }
+        var sub = !!it.parent;
+        var rateBit = sub ? '' : ('<span class="s-m">' + (it.qty ? money(it.rate) + ' &times; ' + it.qty + (it.qty > 1 ? ' visits' : ' visit') : money(it.rate)) + '</span>');
+        rows += '<div class="s-r' + (sub ? ' s-sub' : '') + '"><div class="s-l">'
           + '<div class="s-n">' + esc(it.name || 'Service') + '</div>'
           + (it.desc ? '<div class="s-d">' + serviceDescriptionHtml(it.desc) + '</div>' : '')
-          + '</div><div class="s-r2"><b>' + money(it.total) + '</b>'
-          + '<span class="s-m">' + (it.qty ? money(it.rate) + ' &times; ' + it.qty + (it.qty > 1 ? ' visits' : ' visit') : money(it.rate)) + '</span>'
+          + '</div><div class="s-r2"><b>' + money(it.total) + '</b>' + rateBit
           + '</div></div>';
       });
       var trig = (a.depthTrigger && season === 'snow')
@@ -965,7 +986,7 @@
     h += '<p class="onote">GST included above. Adding or removing services updates this summary instantly.</p>';
     body.innerHTML = h;
     box.classList.add('show');
-    if(window.innerWidth >= 1200) document.body.classList.add('osum-on');
+    if(window.innerWidth >= 1360) document.body.classList.add('osum-on');
     Array.prototype.forEach.call(body.querySelectorAll('.ochip'), function(cb){
       cb.addEventListener('click', function(){
         var r = document.querySelector('input[name=payplan][value="' + cb.getAttribute('data-v') + '"]');
@@ -1010,12 +1031,25 @@
     try { updateCardPrompt(); } catch(_) {}
     try { renderOrderSummary(); } catch(_) {}
   }
+  // Upsell identity (Nov 5 2026): address the estimate by SAP's own id/number. A portal
+  // token is used only when one already exists — nothing is minted for a proposal link.
+  function upsellBody(){
+    var a = window.acct || {};
+    if(!estNo && a.number) estNo = String(a.number);
+    var o = { mode:'quote' };
+    if(e) o.token = e;
+    if(estId) o.estimate_id = estId;
+    if(custId) o.customer_id = custId;
+    if(estNo) o.estimate_number = estNo;
+    return o;
+  }
   function initUpsell(){
     var a = window.acct || {};
-    if(!e) return; // token-driven (Oct 31 2026): upsell API keys on the portal token, not the q GUID
-    var callU = fetch(API_UP, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: e, mode:'quote' }) })
+    var ident = upsellBody();
+    if(!ident.token && !ident.estimate_id && !ident.estimate_number) return;
+    var callU = fetch(API_UP, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(ident) })
       .then(function(r){ return r.json(); }).catch(function(){ return {}; });
-    var callR = fetch(API_RD, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token: e, mode:'quote' }) })
+    var callR = fetch(API_RD, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(ident) })
       .then(function(r){ return r.json(); }).catch(function(){ return {}; });
     Promise.all([callU, callR]).then(function(res){
         var u = res[0] || {}, rr = res[1] || {};
