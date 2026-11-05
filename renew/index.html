@@ -38,6 +38,9 @@
   .osched .osrow{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:#16232f;padding:3px 0;}
   .osched .osrow.tot{border-top:1px solid #e6edf2;margin-top:6px;padding-top:7px;font-weight:800;}
   .osched .osnote{font-size:12px;color:#5b6875;margin-top:8px;line-height:1.5;}
+  .ocard{margin-top:9px;font-size:12.5px;color:#3d4b58;line-height:1.6;}
+  .ocard b{color:#16232f;font-weight:700;}
+  .ocard.payg{margin:2px 0 8px;}
   .btn{background-color:#16a34a;color:#fff;padding:14px 24px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-top:18px;width:100%;box-shadow:0 1px 2px rgba(22,163,74,.35),inset 0 1px 0 rgba(255,255,255,.18);transition:background-color .15s ease,box-shadow .15s ease,transform .05s ease;}
   .btn:hover{background-color:#15803d;box-shadow:0 2px 6px rgba(22,163,74,.4);}
   .btn:active{transform:translateY(1px);}
@@ -1053,6 +1056,9 @@
     });
     if(withGst){
       h += '<div class="otot sum"><span>Payment method</span><span>' + cardShort(a) + '</span></div>';
+      if(a.hasCard && a.cardLast4){
+        h += '<div class="ocard payg"><a class="plchg" style="margin-left:0;" href="' + cardUrlFor() + '" target="_blank" rel="noopener">Use a different card</a></div>';
+      }
       h += '<div class="otot grand"><span>Charged</span><span>After each service</span></div>';
     } else {
       h += '<div class="otot sum"><span>Subtotal</span><span>' + money(sub) + '</span></div>';
@@ -1068,9 +1074,9 @@
           h += '<div class="osrow"><span>' + dt + '</span><span>' + money(eachAmt) + '</span></div>';
         });
         h += '<div class="osnote">' + (a.hasCard && a.cardLast4
-          ? ('Billed automatically to your ' + (a.cardBrand ? esc(a.cardBrand) + ' ' : '') + 'card ending ' + esc(a.cardLast4) + ' on the 1st of each month. ')
-          : 'Billed to the card you add when you confirm, on the 1st of each month. ')
-          + '<a class="plchg" href="' + cardUrlFor() + '" target="_blank" rel="noopener">Use a different card</a></div></div>';
+          ? ('Billed automatically to your ' + (a.cardBrand ? esc(a.cardBrand) + ' ' : '') + 'card ending ' + esc(a.cardLast4) + ' on the 1st of each month.')
+          : 'Billed to the card you add when you confirm, on the 1st of each month.')
+          + '</div></div>';
       }
     }
     var nInst0 = Number(a.installments) || 1;
@@ -1091,6 +1097,9 @@
     h += '<div class="osel"><b>' + pay.head + '</b>'
       + (pay.list ? '<div class="payglist">' + pay.list + '</div>' : '<span>' + pay.body + '</span>')
       + (pay.tail ? '<div class="otail">' + pay.tail + '</div>' : '')
+      + (withGst ? '' : ((a.hasCard && a.cardLast4)
+          ? '<div class="ocard">Card on file: <b>' + (a.cardBrand ? esc(a.cardBrand) + ' ' : '') + '&bull;&bull;&bull;&bull; ' + esc(a.cardLast4) + (a.cardExp ? ' &middot; exp ' + esc(a.cardExp) : '') + '</b> <a class="plchg" href="' + cardUrlFor() + '" target="_blank" rel="noopener">Use a different card</a></div>'
+          : '<div class="ocard">No card on file yet. <a class="plchg" href="' + cardUrlFor() + '" target="_blank" rel="noopener">Add a card</a></div>'))
       + '</div>';
     var mode2 = (document.querySelector('input[name=payplan]:checked')||{}).value || 'installments';
     var blocked = (window.__submitBlocked === true) && mode2 !== 'prepay';
