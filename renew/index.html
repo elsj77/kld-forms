@@ -56,6 +56,10 @@
   .cofbox.need{border-color:#f3c8c8;background:#fff7f7;}
   .cofbox.need .cof-t{color:#b91c1c;}
   .cofbox.need p{color:#3d5a47;}
+  .cofbox.flash{box-shadow:0 0 0 3px #f59e0b;transition:box-shadow .3s;}
+  .btn.is-warn{background:#b45309;}
+  .btn.is-warn:hover{background:#92400e;}
+  #osum .oact button.is-warn{background:#b45309;}
   .cardline{margin-top:10px;font-size:13px;color:#3d5a47;background:#f0faf3;border:1px solid #bcd9c6;border-radius:10px;padding:12px 14px;font-weight:600;}
   .cardline-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
   .cardline-row .cardline{margin-top:0;flex:1;min-width:0;}
@@ -190,9 +194,7 @@
     <div class="svc" id="upsell" style="display:none;"></div>
 
     <h2 style="margin-top:0;" id="payhead">How would you like to pay?</h2>
-    <label class="radio-card" id="rc-installments"><input type="radio" name="payplan" value="installments" checked> <span id="inst-head">Equal Payments </span><span class="sel-amt" id="instamt"></span><span id="inst-dash">&mdash; billed to my card on file</span><br><span class="opt" id="instopt"></span></label>
-    <div id="cardprompt"></div>
-    <label class="radio-card" id="rc-prepay"><input type="radio" name="payplan" value="prepay"> <span id="prepayhead">Prepay the full season</span> <span class="sel-amt" id="prepayamt"></span><span class="opt">(one single payment)</span></label>
+    <label class="radio-card" id="rc-installments"><input type="radio" name="payplan" value="installments" checked> <span id="inst-head">Equal Payments </span><span class="sel-amt" id="instamt"></span><span id="inst-dash">&mdash; billed to my card on file</span><br><span class="opt" id="instopt"></span></label>    <label class="radio-card" id="rc-prepay"><input type="radio" name="payplan" value="prepay"> <span id="prepayhead">Prepay the full season</span> <span class="sel-amt" id="prepayamt"></span><span class="opt">(one single payment)</span></label>
     <div class="prepaybox" id="prepaybox">
       <div id="prepayhosted">
         <p>Pay your full season in one secure payment:</p>
@@ -205,7 +207,7 @@
 
     <label class="radio-card" id="rc-payg" style="display:none"><input type="radio" name="payplan" value="payg"> <span id="payghead">Pay As You Go</span><span class="sel-amt" id="paygamt"></span><br><span class="opt" id="paygopt">Each completed visit is charged to your card on file &mdash; no charge when there is no service.</span></label>
     <div class="err" id="err"></div>
-    <div class="cofbox" id="cofbox" style="display:none;"></div>
+    <div id="cardprompt"></div>
     <div id="payconfirm" style="display:none;"></div>
     <p class="terms" id="termsline" style="display:none;"></p>
     <button class="btn" id="submitbtn">Confirm My Renewal &nbsp;&rarr;</button>
@@ -589,7 +591,6 @@
       + '<div class="acct-row1">'
       + '<span class="acct-name">' + esc([a.first,a.last].filter(Boolean).join(' ')) + '</span>'
       + '<span class="quote">' + (isRes ? sc.tagRes : sc.tagCom) + esc(a.number || '') + '</span>'
-      + (a.total ? '<span class="total">' + (annual ? 'Total ' : 'Season total ') + money(a.total) + '</span>' : '')
       + '</div>'
       + '<div class="acct-row2">'
       + '<span class="acct-item"><span class="k">Phone</span>' + esc(a.phone || '—') + '</span>'
@@ -646,6 +647,7 @@
     }).catch(function(){ if(cb) cb(false); });
   }
   function updateSubmitState(blocked){
+    var wasBlocked = window.__submitBlocked === true;
     window.__submitBlocked = blocked === true;
     var btn = document.getElementById('submitbtn');
     var wasPay = !!btn.dataset.paymode; // leaving prepay mode → must restore the standard label even though the button is enabled (Sept 18 fix)
@@ -653,8 +655,9 @@
     var pc = document.getElementById('payconfirm');
     if(pc) pc.style.display = 'none';
     if(window.footDefault !== undefined){ document.getElementById('footnote').innerHTML = window.footDefault; }
-    if(blocked){ btn.disabled = true; btn.innerHTML = 'Add a Card Above to Confirm'; }
-    else if((btn.disabled || wasPay) && btn.dataset.busy !== '1'){
+    btn.classList.toggle('is-warn', blocked === true);
+    if(blocked){ btn.disabled = false; btn.innerHTML = 'Add a Card to Confirm &nbsp;&rarr;'; }
+    else if((btn.disabled || wasPay || wasBlocked) && btn.dataset.busy !== '1'){
       btn.disabled = false;
       btn.innerHTML = ((window.acct||{}).residential === false) ? 'Accept My Proposal &nbsp;&rarr;' : 'Confirm My Renewal &nbsp;&rarr;';
     }
@@ -667,6 +670,8 @@
     if(pc) pc.style.display = 'none';
     btn.dataset.paymode = (a.chargeable && a.total) ? 'charge' : 'hosted';
     btn.disabled = false;
+    btn.classList.remove('is-warn');
+    window.__submitBlocked = false;
     if(btn.dataset.paymode === 'charge'){
       btn.innerHTML = 'Pay ' + money(a.total) + ' Now &nbsp;&rarr;';
     } else {
@@ -721,148 +726,124 @@
     });
   }
 
-  // shared card-on-file box above the submit button (Ethan, Sept 18 2026): one card
-  // display for BOTH options — details + "Use a different card" — instead of a
-  // duplicated block inside each option. Amber background stands apart from the
-  // blue (installments) and green (prepay) option cards.
-  function renderCofBox(){
-    var box = document.getElementById('cofbox');
-    var a = window.acct || {};
-    var sel = (document.querySelector('input[name=payplan]:checked')||{}).value;
-    if(sel === 'payg') sel = 'installments';
-    var cardUrl = 'https://card.kootenaylawndoctor.com/' + (qq ? ('?q=' + encodeURIComponent(qq)) : ('?t=' + encodeURIComponent(e)));
-    if(sel === 'installments' && a.residential && a.perVisit && a.paygInv){
-      // office-approved invoiced PAYG: card optional
-      box.style.display = 'block';
-      box.className = 'cofbox';
-      box.innerHTML = '<p class="cof-t">Optional &mdash; automatic card billing</p>'
-        + '<p style="margin-bottom:10px;">Your default is <b>invoiced per visit</b> (pay by e-transfer or cheque). If you&rsquo;d rather each visit be charged to a card automatically, add one here:</p>'
-        + '<a class="btn-inline" href="' + cardUrl + '" target="_blank" rel="noopener">Add a Card for Auto-Billing &rarr;</a>'
-        + '<p class="small" style="margin-top:10px;margin-bottom:0;">No card is needed to confirm your renewal &mdash; invoiced terms are perfectly fine.</p>';
-    } else if(sel === 'installments' && a.residential && !a.hasCard){
-      // required-card state (red variant) with add-card CTA + live re-check
-      box.style.display = 'block';
-      box.className = 'cofbox need';
-      // FIX (Oct 1 2026): the Add/Update Card button + check-again + auto-poll note were
-      // chained onto the false (installments) branch of the ternary, so pay-as-you-go
-      // clients got the red "Card required" box with NO button. Shared tail for both.
-      var needHead = a.perVisit
-        ? '<p class="cof-t">Card required for pay-as-you-go billing</p>'
-          + '<p style="margin-bottom:10px;">Each completed visit is billed automatically to your card &mdash; we can&rsquo;t set that up until a card is on file. Add one now (bank-grade secure, about 2 minutes):</p>'
-        : '<p class="cof-t">Card required for monthly installments</p>'
-          + '<p style="margin-bottom:10px;">Your card is billed automatically on ' + billDay() + ' of each month &mdash; we can&rsquo;t set that up until a card is on file. Add one now (bank-grade secure, about 2 minutes):</p>';
-      box.innerHTML = needHead
-        + '<a class="btn-inline" href="' + cardUrl + '" target="_blank" rel="noopener">Add / Update Card &rarr;</a>'
-        + '<div style="margin-top:10px;"><button type="button" class="link-quiet" id="checkcardbtn">I&rsquo;ve added my card &mdash; check again</button></div>'
-        + '<p class="small" style="margin-top:8px;margin-bottom:0;">We also check automatically every 10 seconds &mdash; the moment your card lands, your renewal unlocks right here.</p>';
-      var btn = document.getElementById('checkcardbtn');
-      if(btn) btn.addEventListener('click', function(){
-        var b = this; b.disabled = true; b.textContent = 'Checking\u2026';
-        checkCardNow(function(ok){ if(!ok){ b.disabled = false; b.textContent = 'I\u2019ve added my card \u2014 check again'; } });
-      });
-    } else if(a.hasCard){
-      box.style.display = 'block';
-      box.className = 'cofbox';
-      var payNote = '';
-      if(sel === 'installments' && a.residential && a.monthly){
-        payNote = (a.installments === 1)
-          ? '<p class="small" style="margin-top:8px;margin-bottom:0;">' + (a.season === 'annual' ? 'Your annual payment of ' : 'Your season payment of ') + money(a.total) + ' will be billed to this card once you click the <b>Confirm My Renewal</b> button.</p>'
-          : '<p class="small" style="margin-top:8px;margin-bottom:0;">Your monthly installments of ' + money(a.monthly) + ' will be billed to this card on ' + billDay() + ' of each month once you click the <b>Confirm My Renewal</b> button.</p>';
-      } else if(sel === 'installments' && a.residential === false && a.monthly){
-        payNote = (a.installments === 1)
-          ? '<p class="small" style="margin-top:8px;margin-bottom:0;">' + (a.season === 'annual' ? 'Your annual payment of ' : 'Your season payment of ') + money(a.total) + ' will be billed to this card once you click the <b>Accept My Proposal</b> button &mdash; or invoice terms if you prefer.</p>'
-          : '<p class="small" style="margin-top:8px;margin-bottom:0;">Your monthly payments of ' + money(a.monthly) + ' will be billed automatically to this card starting ' + startLong() + ' once you click the <b>Accept My Proposal</b> button &mdash; or invoice terms if you prefer.</p>';
-      } else if(sel === 'prepay' && a.total){
-        payNote = '<p class="small" style="margin-top:8px;margin-bottom:0;">Your prepayment of ' + money(a.total) + ' will be charged to this card when you click the <b>Pay ' + money(a.total) + ' Now</b> button below.</p>';
-      }
-      box.innerHTML = '<p class="cof-t">Your payment card</p>'
-        + cardOnFileHtml(a, true)
-        + payNote
-        + '<p class="small" style="margin-top:8px;margin-bottom:0;">After adding a new card, <button type="button" class="link-quiet" onclick="location.reload()">refresh this page</button> to see it here.</p>';
-    } else if(sel === 'installments' && !a.residential){
-      // COMMERCIAL, no card: optional auto-billing offer
-      box.style.display = 'block';
-      box.className = 'cofbox';
-      box.innerHTML = '<p class="cof-t">Optional &mdash; automatic card billing</p>'
-        + '<p style="margin-bottom:10px;">Your default is <b>monthly invoices</b> (pay by EFT, e-transfer, or cheque). If you&rsquo;d rather we bill a card automatically each month, add one here:</p>'
-        + '<a class="btn-inline" href="' + cardUrl + '" target="_blank" rel="noopener">Add a Card for Auto-Billing &rarr;</a>'
-        + '<p class="small" style="margin-top:10px;margin-bottom:0;">No card is needed to accept your proposal &mdash; invoice terms are perfectly fine.</p>'
-        + '<p class="small" style="margin-top:8px;margin-bottom:0;">After adding a new card, <button type="button" class="link-quiet" onclick="location.reload()">refresh this page</button> to see it here.</p>';
-    } else {
-      box.style.display = 'none';
-      box.innerHTML = '';
-    }
+  // ── ONE payment panel (Nov 5 2026) ─────────────────────────────────────────
+  // Cards and billing notes all render in #cardprompt, directly under the three
+  // plans. The old second box (#cofbox) is retired so a "card required" block can
+  // never appear twice, and the plan choice drives every sentence in one place.
+  function cardUrlFor(){
+    return 'https://card.kootenaylawndoctor.com/' + (qq ? ('?q=' + encodeURIComponent(qq)) : ('?t=' + encodeURIComponent(e)));
   }
+
+  function cardNeededHtml(a, kind){
+    var why;
+    if(kind === 'payg' || a.perVisit){
+      why = 'Each completed visit is charged automatically to your card &mdash; nothing is charged unless service happens.';
+    } else if(Number(a.installments) > 1){
+      why = 'Your renewal is split into <b>' + a.installments + ' equal payments</b> of <b>' + money(a.monthly) + '</b>, billed automatically to your card on ' + billDay() + ' of each month.';
+    } else {
+      why = 'Residential renewals are billed automatically to a card on file.';
+    }
+    return '<div class="cofbox need" style="display:block;margin-top:14px;">'
+      + '<p class="cof-t">A card on file is needed to confirm</p>'
+      + '<p style="margin-bottom:10px;">' + why + ' Add your card now (bank-grade secure, about 2 minutes) and this page updates by itself:</p>'
+      + '<a class="btn-inline" href="' + cardUrlFor() + '" target="_blank" rel="noopener">Add a Card on File &rarr;</a>'
+      + '<div style="margin-top:10px;"><button type="button" class="link-quiet" id="checkcardbtn">I&rsquo;ve added my card &mdash; check again</button></div>'
+      + '<p class="small" style="margin-top:8px;margin-bottom:0;">We also check automatically every 10 seconds &mdash; the moment your card lands, your renewal unlocks.</p>'
+      + '<p class="small" style="margin-top:6px;margin-bottom:0;">Prefer to pay once? Choose <b>Prepay the full season</b> above &mdash; no card needed now.</p>'
+      + '</div>';
+  }
+
+  function cardOnFilePanel(a, kind){
+    var note;
+    if(kind === 'payg' || a.perVisit){
+      note = 'Each completed visit is charged to this card automatically' + (window.perVisitRates ? ' &mdash; ' + window.perVisitRates : '') + '. No charges unless service happens.';
+    } else if(Number(a.installments) > 1){
+      note = 'Your ' + a.installments + ' payments of <b>' + money(a.monthly) + '</b> are billed to this card on ' + billDay() + ' of each month, starting when you confirm.';
+    } else {
+      note = 'Your ' + (window.__seasonWord || 'season') + ' total of <b>' + money(a.total) + '</b> is billed to this card when you confirm.';
+    }
+    return '<div class="cofbox" style="display:block;margin-top:14px;">'
+      + '<p class="cof-t">Your payment card</p>'
+      + cardOnFileHtml(a, true)
+      + '<p style="margin:10px 0 0;">' + note + '</p>'
+      + '</div>';
+  }
+
+  function invoicePanelHtml(a, kind){
+    var h = '<div class="sched" style="margin-top:14px;"><div class="s-t">How you&rsquo;ll be billed</div>';
+    if(kind === 'payg' || a.perVisit){
+      h += '<div class="s-note" style="margin-top:2px;">Each completed visit is invoiced' + (window.perVisitRates ? ' at ' + window.perVisitRates : '') + ' &mdash; payable by EFT, e-transfer, or cheque. No invoices unless service happens.</div>';
+    } else if(Number(a.installments) > 1){
+      h += '<div class="s-note" style="margin-top:2px;">' + a.installments + ' equal monthly invoices of ' + money(a.monthly) + ', payable by EFT, e-transfer, or cheque. No card is needed.</div>';
+    } else {
+      h += '<div class="s-note" style="margin-top:2px;">One invoice for ' + money(a.total) + ', payable by EFT, e-transfer, or cheque. No card is needed.</div>';
+    }
+    h += '<div style="margin-top:10px;"><a class="link-quiet" href="' + cardUrlFor() + '" target="_blank" rel="noopener">Or add a card for automatic billing &rarr;</a></div></div>';
+    return h;
+  }
+
+  function renderCofBox(){ var b = document.getElementById('cofbox'); if(b){ b.style.display = 'none'; b.innerHTML = ''; } }
+
+  function wireCheckCard(){
+    var btn = document.getElementById('checkcardbtn');
+    if(btn) btn.addEventListener('click', function(){
+      var b = this; b.disabled = true; b.textContent = 'Checking\u2026';
+      checkCardNow(function(ok){ if(!ok){ b.disabled = false; b.textContent = 'I\u2019ve added my card \u2014 check again'; } });
+    });
+  }
+
+  // scroll to the card block and flash it (the summary CTA and the submit button
+  // both land here instead of leaving the client with a dead end)
+  function focusCardNeeded(){
+    var host = document.getElementById('cardprompt');
+    if(!host) return;
+    var p = host.querySelector('.cofbox.need') || host;
+    try { p.scrollIntoView({behavior:'smooth', block:'center'}); } catch(_) { p.scrollIntoView(); }
+    p.classList.add('flash');
+    setTimeout(function(){ p.classList.remove('flash'); }, 2200);
+  }
+  window.focusCardNeeded = focusCardNeeded;
 
   function updateCardPrompt(){
     var box = document.getElementById('cardprompt');
     var pre = document.getElementById('prepaybox');
-    var rci = document.getElementById('rc-installments');
-    var selRaw = (document.querySelector('input[name=payplan]:checked')||{}).value;
+    var selRaw = (document.querySelector('input[name=payplan]:checked')||{}).value || 'installments';
     var sel = (selRaw === 'payg') ? 'installments' : selRaw;
     var a = window.acct || {};
     pre.classList.toggle('show', sel === 'prepay');
-    // amounts right in the selectors
     if(a.installments && a.monthly){ document.getElementById('instamt').textContent = '\u2014 ' + (a.installments === 1 ? money(a.monthly) : money(a.monthly) + '/mo \u00b7 ' + a.installments + ' equal payments') + ' '; }
     if(a.total){ document.getElementById('prepayamt').textContent = '\u2014 ' + money(a.total) + ' '; }
-    try { renderOrderSummary(); } catch(_) {}
-    renderCofBox();
-    if(sel === 'installments' && a.residential && a.perVisit && a.paygInv && !a.hasCard){
-      // office-approved invoiced PAYG: no card wall
-      rci.classList.remove('warn'); stopPoll();
-      box.innerHTML = '<div class="sched"><div class="s-t">How you&rsquo;ll be billed</div>'
-        + '<div class="s-note" style="margin-top:2px;">Each completed visit is invoiced' + (perVisitRates ? ' at ' + perVisitRates : '') + ' &mdash; payable by e-transfer or cheque. No invoices unless service happens. (Add a card anytime if you&rsquo;d prefer automatic billing.)</div></div>';
-      updateSubmitState(false);
-    } else if(sel === 'installments' && a.residential && a.perVisit){
-      if(a.hasCard){
-        rci.classList.remove('warn'); stopPoll();
-        box.innerHTML = '<div class="sched"><div class="s-t">How you&rsquo;ll be billed</div>'
-          + '<div class="s-note" style="margin-top:2px;">Each completed visit is charged automatically to your card on file' + (perVisitRates ? ' at ' + perVisitRates : '') + ' &mdash; no charges unless service happens.</div></div>';
-        updateSubmitState(false);
-      } else {
-        rci.classList.add('warn');
-        box.innerHTML = '';
-        startPoll();
-        updateSubmitState(true);
-      }
-    } else if(sel === 'installments' && a.residential){
-      var sched = (a.installments && a.monthly && a.total) ? schedHtml(a.installments, a.monthly, a.total) : '';
-      if(a.hasCard){
-        rci.classList.remove('warn'); stopPoll();
-        box.innerHTML = sched;
-        updateSubmitState(false);
-      } else {
-        // RESIDENTIAL, no card yet: state the requirement explicitly (Oct 31 2026)
-        rci.classList.add('warn');
-        startPoll();
-        updateSubmitState(true);
-        var addCardUrl = 'https://card.kootenaylawndoctor.com/' + (qq ? ('?q=' + encodeURIComponent(qq)) : ('?t=' + encodeURIComponent(e)));
-        box.innerHTML = '<div class="cofbox need" style="display:block;margin-top:12px;">'
-          + '<p class="cof-t">Card on file required</p>'
-          + '<p style="margin-bottom:10px;">Residential renewals are billed automatically to a card on file. Add your card below and this page updates, or choose <b>Prepay the full season</b> to pay once instead. Invoiced terms are available only with office approval.</p>'
-          + '<a class="btn-inline" href="' + addCardUrl + '" target="_blank" rel="noopener">Add a Card on File &rarr;</a>'
-          + '<p class="small" style="margin-top:10px;margin-bottom:0;">Your renewal cannot be confirmed until a card is saved or you prepay.</p>'
-          + '</div>';
-      }
-    } else if(sel === 'installments' && !a.residential) {
-      // COMMERCIAL: invoicing — no card required; card = optional auto-billing
-      rci.classList.remove('warn'); stopPoll();
-      box.innerHTML = a.perVisit
-        ? '<div class="sched"><div class="s-t">How you&rsquo;ll be billed</div>'
-          + '<div class="s-note" style="margin-top:2px;">Each completed visit is invoiced' + (perVisitRates ? ' at ' + perVisitRates : '') + ' &mdash; payable by EFT, e-transfer, or cheque. No invoices unless service happens.</div></div>'
-        : ((a.installments && a.monthly && a.total) ? schedHtml(a.installments, a.monthly, a.total, true, qq ? ('https://card.kootenaylawndoctor.com/pay/?q=' + encodeURIComponent(qq)) : ('https://card.kootenaylawndoctor.com/pay/?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : ''))) : '');
-      if(a.season === 'snow') box.innerHTML += '<p class="small" style="margin:10px 2px 0 2px;">Crews deploy automatically when your service threshold is met (typically 2&Prime; / 5 cm of snow) or when freezing precipitation is detected.</p>';
-      updateSubmitState(false);
-    } else if(sel === 'prepay') {
-      rci.classList.remove('warn'); stopPoll();
+    try { renderCofBox(); } catch(_) {}
+
+    if(sel === 'prepay'){
+      stopPoll();
       buildPrepayUI(a);
       box.innerHTML = '';
       setPayMode(a);
-    } else {
-      rci.classList.remove('warn'); stopPoll();
-      box.innerHTML = '';
-      updateSubmitState(false);
+      try { renderOrderSummary(); } catch(_) {}
+      return;
     }
+
+    var kind = (selRaw === 'payg' || a.perVisit) ? 'payg' : 'installments';
+    var invoiced = !a.residential || (a.paygInv && kind === 'installments');
+    if(invoiced){
+      box.innerHTML = invoicePanelHtml(a, kind);
+      stopPoll();
+      updateSubmitState(false);
+    } else if(a.hasCard){
+      box.innerHTML = cardOnFilePanel(a, kind);
+      stopPoll();
+      updateSubmitState(false);
+    } else {
+      box.innerHTML = cardNeededHtml(a, kind);
+      wireCheckCard();
+      startPoll();
+      updateSubmitState(true);
+    }
+    if(window.season === 'snow' && a.residential === false){
+      box.innerHTML += '<p class="small" style="margin:10px 2px 0 2px;">Crews deploy automatically when your service threshold is met (typically 2&Prime; / 5 cm of snow) or when freezing precipitation is detected.</p>';
+    }
+    try { renderOrderSummary(); } catch(_) {}
   }
 
   function buildPrepayUI(a){
@@ -941,6 +922,9 @@
     var nInst = Number(a.installments) || 1;
     var mode = (document.querySelector('input[name=payplan]:checked')||{}).value || 'installments';
     if(mode === 'prepay') return { head: 'Prepay in full', body: money(tot) + ' in one payment today.' };
+    if(mode === 'payg'){
+      return { head: 'Pay as you go', body: 'Each completed visit is charged' + (window.perVisitRates ? ' (' + window.perVisitRates + ')' : '') + ' to your card on file. Nothing is charged unless service happens.' };
+    }
     if(nInst > 1) return { head: nInst + ' monthly payments', body: money(Math.round(tot*100/nInst)/100) + ' per month to your card on file.' };
     return { head: 'Automatic billing per service', body: 'Each visit is charged to your card on file when the service is completed.' };
   }
@@ -973,6 +957,10 @@
     var chips = (nInst0 > 1)
       ? [{ v:'installments', l: nInst0 + '&nbsp;payments' }, { v:'prepay', l:'Prepay' }]
       : [{ v:'installments', l:'Auto-pay' }, { v:'prepay', l:'Prepay' }];
+    var paygCard = document.getElementById('rc-payg');
+    if(paygCard && paygCard.style.display !== 'none'){
+      chips.push({ v:'payg', l:'Pay&nbsp;as&nbsp;you&nbsp;go' });
+    }
     if(chips.length > 1){
       h += '<div class="ochips">' + chips.map(function(c){
         return '<button type="button" class="ochip' + (c.v === curMode ? ' on' : '') + '" data-v="' + c.v + '">' + c.l + '</button>';
@@ -984,9 +972,10 @@
     var blocked = (window.__submitBlocked === true) && mode2 !== 'prepay';
     var goLabel = (mode2 === 'prepay')
       ? ('Prepay ' + money(tot) + ' &nbsp;&rarr;')
-      : (blocked ? 'Add a card above to confirm' : 'Confirm &amp; Accept &nbsp;&rarr;');
-    h += '<div class="oact"><button id="osumGo" type="button"' + (blocked ? ' disabled' : '') + '>' + goLabel + '</button></div>';
-    h += '<p class="onote">GST included above. Adding or removing services updates this summary instantly.</p>';
+      : (blocked ? 'Add a card to confirm &nbsp;&rarr;' : 'Confirm &amp; Accept &nbsp;&rarr;');
+    h += '<div class="oact"><button id="osumGo" type="button"' + (blocked ? ' class="is-warn"' : '') + '>' + goLabel + '</button></div>';
+    h += '<p class="onote">GST included above. Adding or removing services updates this summary instantly.'
+       + (blocked ? ' A card on file is needed at checkout &mdash; the payment section explains why.' : '') + '</p>';
     body.innerHTML = h;
     box.classList.add('show');
     if(window.innerWidth >= 1360) document.body.classList.add('osum-on');
@@ -999,6 +988,7 @@
     });
     var go = document.getElementById('osumGo');
     if(go) go.addEventListener('click', function(){
+      if(blocked){ try { focusCardNeeded(); } catch(_) {} return; }
       if(mode2 === 'prepay'){
         var pl = document.getElementById('prepaylink');
         if(pl && pl.href) window.open(pl.href, '_blank', 'noopener');
@@ -1046,23 +1036,36 @@
     if(estNo) o.estimate_number = estNo;
     return o;
   }
-  function initUpsell(){
+  function initUpsell(attempt){
+    attempt = attempt || 0;
     var a = window.acct || {};
     var ident = upsellBody();
     if(!ident.token && !ident.estimate_id && !ident.estimate_number) return;
+    var pre = document.getElementById('upsell');
+    if(pre && !pre.innerHTML){
+      // visible placeholder so the section is never a silent no-show
+      pre.innerHTML = '<div class="s-t">Add these to your season <span style="font-weight:400;color:#475569;">&mdash; optional</span></div>'
+        + '<div class="s-note" style="padding:10px 14px;">Loading your optional add-ons&hellip;</div>';
+      pre.style.display = 'block';
+    }
     var callU = fetch(API_UP, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(ident) })
       .then(function(r){ return r.json(); }).catch(function(){ return {}; });
     var callR = fetch(API_RD, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(ident) })
       .then(function(r){ return r.json(); }).catch(function(){ return {}; });
     Promise.all([callU, callR]).then(function(res){
         var u = res[0] || {}, rr = res[1] || {};
-        if(u.has_winter_lines || rr.has_winter_lines) return;
+        var holder = document.getElementById('upsell');
+        if(u.has_winter_lines || rr.has_winter_lines){ if(holder){ holder.style.display = 'none'; holder.innerHTML = ''; } return; }
         var rounds = (rr.addons || []).filter(function(x){ return x && x.price_ready && Number(x.price) > 0; })
           .map(function(x){ return { key:x.key, name:x.name, price:Number(x.price), ready:true }; });
         var others = ((u && u.addons) || []).filter(function(x){ return x && (x.price_ready || x.ready) && Number(x.price) > 0; })
           .map(function(x){ return { key:x.key, name:x.name, price:Number(x.price), ready:true }; });
         var list = rounds.concat(others);
-        if(!list.length) return;
+        if(!list.length){
+          if(!attempt){ setTimeout(function(){ initUpsell(1); }, 1500); return; }
+          if(holder){ holder.style.display = 'none'; holder.innerHTML = ''; }
+          return;
+        }
         window.upsellSel = window.upsellSel || {};
         var html = '<div class="s-t">Add these to your season <span style="font-weight:400;color:#475569;">&mdash; optional</span></div>';
         list.forEach(function(x){
@@ -1095,6 +1098,11 @@
     errEl.style.display='none';
     var btn = this;
     var paymode = btn.dataset.paymode || '';
+    if(window.__submitBlocked === true && !paymode){
+      focusCardNeeded();
+      showErr('Add a card on file first — or choose “Prepay the full season” to pay once instead.');
+      return;
+    }
     if(!paymode && !btn.dataset.updone && upSelected().length){
       var picks = upSelected();
       btn.dataset.updone = '1';
