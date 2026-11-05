@@ -25,8 +25,8 @@
   .radio-card{display:block;border:1px solid #cbd5e1;border-radius:8px;padding:13px 14px;margin:8px 0;cursor:pointer;font-size:14px;color:#1b2933;background:#fff;}
   .radio-card:hover{border-color:#16a34a;}
   .radio-card.checked{border:2px solid #16a34a;padding:12px 13px;}
-  #rc-installments:hover{border-color:#2563eb;}
-  #rc-installments.checked{border-color:#2563eb;background:#eff6ff;}
+  #rc-installments:hover{border-color:#ca8a04;}
+  #rc-installments.checked{border-color:#eab308;background:#fefce8;}
   #rc-prepay.checked{border-color:#16a34a;background:#f0faf3;}
   .radio-card input{margin-right:10px;vertical-align:-2px;}
   .btn{background-color:#16a34a;color:#fff;padding:14px 24px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-top:18px;width:100%;box-shadow:0 1px 2px rgba(22,163,74,.35),inset 0 1px 0 rgba(255,255,255,.18);transition:background-color .15s ease,box-shadow .15s ease,transform .05s ease;}
@@ -47,8 +47,8 @@
   .acct-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 24px;align-items:start;}
   .acct-cell{display:flex;flex-direction:column;gap:2px;min-width:0;}
   .acct-cell.wide{grid-column:1 / -1;}
-  .acct-cell.tagcell{align-items:flex-end;justify-content:flex-end;}
-  .acct-cell.tagcell .quote{margin-left:0;align-self:flex-end;width:auto;max-width:100%;}
+  .acct-cell.tagcell{align-items:flex-start;justify-content:flex-start;}
+  .acct-cell.tagcell .quote{margin-left:0;align-self:flex-start;width:auto;max-width:100%;}
   .quote.green{background:#15803d;}
   .acct-cell .k{font-size:10.5px;color:#8a94a0;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
   .acct-cell .v{font-size:13.5px;color:#16232f;font-weight:600;overflow-wrap:anywhere;line-height:1.35;}
@@ -778,7 +778,7 @@
   function cardNeededHtml(a, kind){
     var why;
     if(kind === 'payg' || a.perVisit){
-      why = 'Each completed visit is charged automatically to your card. Nothing is charged unless service happens.';
+      why = 'Each completed visit is charged automatically to your card. Nothing is charged until the service happens.';
     } else if(Number(a.installments) > 1){
       why = 'Your renewal is split into <b>' + a.installments + ' equal payments</b> of <b>' + money(a.monthly) + '</b>, billed automatically to your card on ' + billDay() + ' of each month.';
     } else {
@@ -967,7 +967,7 @@
     if(mode === 'payg'){
       return {
         head: 'Pay as you go',
-        body: 'Charged to your card on file after each completed visit, at the per visit prices above. Nothing is charged unless service happens.'
+        body: 'Charged to your card on file after each completed visit, at the per visit prices above. Nothing is charged until the service happens.'
       };
     }
     if(nInst > 1) return { head: nInst + ' monthly payments', body: money(Math.round(tot*100/nInst)/100) + ' per month to your card on file.' };
@@ -1000,7 +1000,13 @@
       h += '<div class="oline addon"><div class="nm"><b>' + esc(x.name) + '</b><small>Add-on</small></div><div>' + money(x.price) + '</div></div>';
     });
     if(withGst){
+      var gstAdd = Math.round(addTotal * 0.05 * 100) / 100;
       h += '<div class="otot sum"><span>Payment method</span><span>' + cardShort(a) + '</span></div>';
+      if(addTotal > 0){
+        h += '<div class="otot"><span>Optional services</span><span>' + money(addTotal) + '</span></div>';
+        h += '<div class="otot"><span>GST (5%)</span><span>' + money(gstAdd) + '</span></div>';
+        h += '<div class="otot"><span>Optional services total</span><span>' + money(addTotal + gstAdd) + '</span></div>';
+      }
       h += '<div class="otot grand"><span>Charged</span><span>After each service</span></div>';
     } else {
       h += '<div class="otot sum"><span>Subtotal</span><span>' + money(sub) + '</span></div>';
@@ -1032,10 +1038,10 @@
       ? ('Prepay ' + money(tot) + ' &nbsp;&rarr;')
       : (blocked ? 'Add a card to confirm &nbsp;&rarr;' : 'Confirm &amp; Accept &nbsp;&rarr;');
     h += '<div class="oact"><button id="osumGo" type="button"' + (blocked ? ' class="is-warn"' : '') + '>' + goLabel + '</button></div>';
-    h += '<p class="onote">' + (withGst
-        ? 'Per visit prices above include GST. Nothing is charged unless a service happens.'
-        : 'GST included above. Adding or removing services updates this summary instantly.')
-       + (blocked ? ' A card on file is needed at checkout. The payment section explains why.' : '') + '</p>';
+    var noteBits = [];
+    if(!withGst) noteBits.push('GST included above. Adding or removing services updates this summary instantly.');
+    if(blocked) noteBits.push('A card on file is needed at checkout. The payment section explains why.');
+    if(noteBits.length) h += '<p class="onote">' + noteBits.join(' ') + '</p>';
     body.innerHTML = h;
     box.classList.add('show');
     if(window.innerWidth >= 1360) document.body.classList.add('osum-on');
@@ -1102,11 +1108,20 @@
     var annual = (a.season === 'annual');
     var paygSel = ((document.querySelector('input[name=payplan]:checked') || {}).value === 'payg');
     if(paygSel){
-      return '<div class="s-sum" id="sumblock">'
-        + '<div class="row"><span>Payment method</span><span>' + cardShort(a) + '</span></div>'
-        + '<div class="row grand"><span>Charged</span><span>After each completed service</span></div>'
-        + '</div>'
-        + '<div class="s-note" style="padding:9px 14px;">Nothing is charged unless a service happens.</div>';
+      var adds = (typeof osumSelected === 'function') ? osumSelected() : [];
+      var addTot = 0;
+      adds.forEach(function(x){ addTot += Number(x.price || 0); });
+      addTot = Math.round(addTot * 100) / 100;
+      var addGst = Math.round(addTot * 0.05 * 100) / 100;
+      var prow = '<div class="row"><span>Payment method</span><span>' + cardShort(a) + '</span></div>';
+      if(addTot > 0){
+        prow += '<div class="row"><span>Optional services</span><span>' + money(addTot) + '</span></div>'
+          + '<div class="row"><span>GST (5%)</span><span>' + money(addGst) + '</span></div>'
+          + '<div class="row"><span>Optional services total</span><span>' + money(addTot + addGst) + '</span></div>';
+      }
+      prow += '<div class="row grand"><span>Charged</span><span>After each completed service</span></div>';
+      return '<div class="s-sum" id="sumblock">' + prow + '</div>'
+        + '<div class="s-note" style="padding:9px 14px;">Nothing is charged until the service happens.</div>';
     }
     return '<div class="s-sum" id="sumblock">'
       + '<div class="row"><span>' + (annual ? 'Subtotal' : 'Season subtotal') + '</span><span>' + money(a.subtotal || a.total) + '</span></div>'
