@@ -47,6 +47,9 @@
   .acct-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 24px;align-items:start;}
   .acct-cell{display:flex;flex-direction:column;gap:2px;min-width:0;}
   .acct-cell.wide{grid-column:1 / -1;}
+  .acct-cell.tagcell{justify-content:flex-end;}
+  .acct-cell.tagcell .quote{margin-left:0;}
+  .quote.green{background:#15803d;}
   .acct-cell .k{font-size:10.5px;color:#8a94a0;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
   .acct-cell .v{font-size:13.5px;color:#16232f;font-weight:600;overflow-wrap:anywhere;line-height:1.35;}
   @media(max-width:560px){.acct-grid{grid-template-columns:1fr;gap:9px;}}
@@ -601,12 +604,12 @@
     who.innerHTML = '<p class="lbl">' + (isRes ? 'Confirming your renewal for' : 'Accepting your proposal for') + '</p>'
       + '<div class="acct-row1">'
       + '<span class="acct-name">' + esc([a.first,a.last].filter(Boolean).join(' ')) + '</span>'
-      + '<span class="quote">' + (isRes ? sc.tagRes : sc.tagCom) + esc(a.number || '') + '</span>'
       + '</div>'
       + '<div class="acct-grid">'
       + '<div class="acct-cell"><span class="k">Phone</span><span class="v">' + esc(a.phone || 'Not provided') + '</span></div>'
       + '<div class="acct-cell"><span class="k">Email</span><span class="v">' + esc(a.email || 'Not provided') + '</span></div>'
-      + '<div class="acct-cell wide"><span class="k">Service address</span><span class="v">' + esc([a.street,a.city,a.postal].filter(Boolean).join(', ')) + '</span></div>'
+      + '<div class="acct-cell"><span class="k">Service address</span><span class="v">' + esc([a.street,a.city,a.postal].filter(Boolean).join(', ')) + '</span></div>'
+      + '<div class="acct-cell tagcell"><span class="quote' + (season === 'summer' ? ' green' : '') + '">' + (isRes ? sc.tagRes : sc.tagCom) + esc(a.number || '') + '</span></div>'
       + '</div>';
     who.style.display='block';
     document.getElementById('prepaylink').href = qq ? ('https://card.kootenaylawndoctor.com/pay/?q=' + encodeURIComponent(qq)) : ('https://card.kootenaylawndoctor.com/pay/?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : ''));
@@ -936,13 +939,9 @@
     var mode = (document.querySelector('input[name=payplan]:checked')||{}).value || 'installments';
     if(mode === 'prepay') return { head: 'Prepay in full', body: money(tot) + ' in one payment today.' };
     if(mode === 'payg'){
-      var rows = (a.items || []).filter(function(i){ return Number(i.rate) > 0; }).map(function(i){
-        return '<div class="paygrow"><span>' + esc(i.name || 'Service') + '</span><b>' + money(i.rate) + '</b></div>';
-      }).join('');
       return {
         head: 'Pay as you go',
-        list: rows,
-        tail: 'Per visit rates. GST is added to each invoice, so the amount charged after a visit is higher than the rate shown. Nothing is charged unless service happens.'
+        body: 'Charged to your card on file after each completed visit, at the per visit prices above. Nothing is charged unless service happens.'
       };
     }
     if(nInst > 1) return { head: nInst + ' monthly payments', body: money(Math.round(tot*100/nInst)/100) + ' per month to your card on file.' };
@@ -959,11 +958,16 @@
     var gst = Math.round(((Number(a.tax)||0) + addTotal*0.05)*100)/100;
     var tot = Math.round((sub + addTotal + gst)*100)/100;
     var h = '<h3>Your ' + (window.__seasonWord || 'season') + ' summary</h3><p class="osub">Everything you are confirming</p>';
+    var modeItems = (document.querySelector('input[name=payplan]:checked')||{}).value || 'installments';
+    var withGst = (modeItems === 'payg');
     a.items.forEach(function(it){
       if(!it || !Number(it.rate)) return;
       var amt = (it.total != null) ? Number(it.total) : Number(it.rate) * (Number(it.qty)||1);
+      if(withGst) amt = Math.round(Number(it.rate) * 1.05 * 100) / 100;   // per visit, GST in
       // package children carry their own price; no "each" subtitle for one-time applications
-      var subLine = it.parent ? '' : '<small>' + (Number(it.qty)>1 ? (Number(it.qty) + ' &times; ' + money(it.rate)) : money(it.rate) + ' each') + '</small>';
+      var subLine = withGst
+        ? '<small>per visit, GST included</small>'
+        : (it.parent ? '' : '<small>' + (Number(it.qty)>1 ? (Number(it.qty) + ' &times; ' + money(it.rate)) : money(it.rate) + ' each') + '</small>');
       h += '<div class="oline' + (it.parent ? ' osub-item' : '') + '"><div class="nm">' + esc(it.name||'Service') + subLine + '</div><div>' + money(amt) + '</div></div>';
     });
     addons.forEach(function(x){
@@ -1072,6 +1076,8 @@
         + '<div class="s-note" style="padding:10px 14px;">Loading your optional add-ons&hellip;</div>';
       pre.style.display = 'block';
     }
+    // summerUpsellPublic alone prices the lawn rounds AND the granular/aeration add-ons,
+    // so one successful call is enough. The round helper only contributes missing FW rounds.
     var callU = fetch(API_UP, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(ident) })
       .then(function(r){ return r.json(); }).catch(function(){ return {}; });
     var callR = fetch(API_RD, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(ident) })
@@ -1080,22 +1086,32 @@
         var u = res[0] || {}, rr = res[1] || {};
         var holder = document.getElementById('upsell');
         if(u.has_winter_lines || rr.has_winter_lines){ if(holder){ holder.style.display = 'none'; holder.innerHTML = ''; } return; }
-        var rounds = (rr.addons || []).filter(function(x){ return x && x.price_ready && Number(x.price) > 0; })
-          .map(function(x){ return { key:x.key, name:x.name, price:Number(x.price), ready:true }; });
-        var others = ((u && u.addons) || []).filter(function(x){ return x && (x.price_ready || x.ready) && Number(x.price) > 0; })
-          .map(function(x){ return { key:x.key, name:x.name, price:Number(x.price), ready:true }; });
-        var list = rounds.concat(others);
+        function norm(x){ return { key:x.key, name:x.name, price:Number(x.price), ready:true }; }
+        function ok(x){ return x && x.key && (x.price_ready || x.ready) && Number(x.price) > 0; }
+        var rounds = ((rr && rr.addons) || []).filter(ok).map(norm);
+        var others = ((u && u.addons) || []).filter(ok).map(norm);
+        var seen = {}, list = [];
+        rounds.concat(others).forEach(function(x){ if(!seen[x.key]){ seen[x.key] = 1; list.push(x); } });
         if(!list.length){
           // never hide on a transient failure: back off and try again before giving up
-          var wait = [1500, 4000, 8000][attempt];
+          var wait = [1000, 3000, 7000, 12000][attempt];
           if(wait !== undefined){ setTimeout(function(){ initUpsell(attempt + 1); }, wait); return; }
           try{
             fetch(API_LOG, { method:'POST', headers:{'Content-Type':'application/json'},
               body: JSON.stringify({ page:'renew', mode:'upsell_empty',
-                detail: JSON.stringify({ u:(u && (u.error || u.message)) || null, rr:(rr && (rr.error || rr.message)) || null, est:estNo || null }).slice(0,600),
-                estimate_number: estNo || null }) });
+                detail: JSON.stringify({ u: (u && (u.error || u.message)) || (u && Object.keys(u).length ? Object.keys(u).join(',') : 'no response'),
+                                         rr: (rr && (rr.message || rr.error)) || (rr && Object.keys(rr).length ? Object.keys(rr).join(',') : 'no response'),
+                                         lawn: (u && u.lawn_app_price) || null, est: estNo || null,
+                                         ua: (navigator.userAgent || '').slice(0,90) }).slice(0,700),
+                estimate_number: estNo || null, user_agent: (navigator.userAgent || '').slice(0,120) }) });
           }catch(_){}
-          if(holder){ holder.style.display = 'none'; holder.innerHTML = ''; }
+          if(holder){
+            holder.innerHTML = '<div class="s-t">Add these to your season <span style="font-weight:400;color:#475569;">(optional)</span></div>'
+              + '<div class="s-note" style="padding:10px 14px;">Your optional add-ons did not load. <button type="button" class="link-quiet" id="upreload" style="margin-top:0;">Try again</button></div>';
+            holder.style.display = 'block';
+            var rb = document.getElementById('upreload');
+            if(rb) rb.addEventListener('click', function(){ window.__upsellDone = false; holder.innerHTML = ''; initUpsell(0); });
+          }
           return;
         }
         window.__upsellDone = true;
