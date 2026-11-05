@@ -47,12 +47,12 @@
   .acct-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 24px;align-items:start;}
   .acct-cell{display:flex;flex-direction:column;gap:2px;min-width:0;}
   .acct-cell.wide{grid-column:1 / -1;}
-  .acct-cell.tagcell{justify-content:flex-end;}
-  .acct-cell.tagcell .quote{margin-left:0;}
+  .acct-cell.tagcell{align-items:flex-end;justify-content:flex-end;}
+  .acct-cell.tagcell .quote{margin-left:0;align-self:flex-end;width:auto;max-width:100%;}
   .quote.green{background:#15803d;}
   .acct-cell .k{font-size:10.5px;color:#8a94a0;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
   .acct-cell .v{font-size:13.5px;color:#16232f;font-weight:600;overflow-wrap:anywhere;line-height:1.35;}
-  @media(max-width:560px){.acct-grid{grid-template-columns:1fr;gap:9px;}}
+  @media(max-width:560px){.acct-grid{grid-template-columns:1fr;gap:9px;}.acct-cell.tagcell{align-items:flex-start;justify-content:flex-start;}.acct-cell.tagcell .quote{align-self:flex-start;}}
   #rc-payg.checked{border-color:#0ea5e9;background:#f0f9ff;}
   .cofbox{margin-top:16px;border:1px solid #eddba0;background:#fdf6e1;border-radius:10px;padding:13px 14px;}
   .cofbox .cof-t{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#92650a;margin:0 0 8px;}
@@ -531,17 +531,28 @@
     document.getElementById('submitbtn').innerHTML = isRes ? 'Confirm My Renewal &nbsp;&rarr;' : 'Accept My Proposal &nbsp;&rarr;';
     window.footDefault = null;
     if(isRes){
-      document.getElementById('footnote').innerHTML = perVisit
-        ? 'Your renewal is confirmed the moment you click the button . You&rsquo;re only charged when service visits happen. Prefer to think about it? Doing nothing also renews your ' + seasonWord + ' automatically on ' + autoRenewLong() + ' so you don&rsquo;t miss out on services.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.'
-        : 'Your renewal is confirmed based on the plan outlined above the moment you click the button. Prefer to think about it? Doing nothing also renews your ' + seasonWord + ' automatically on ' + autoRenewLong() + ' to ensure you don&rsquo;t miss out on services.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
+      var autoRenewBit = hasValidCard(a)
+        ? (perVisit
+            ? ' Prefer to think about it? Doing nothing also renews your ' + seasonWord + ' automatically on ' + autoRenewLong() + ' so you don&rsquo;t miss out on services.'
+            : ' Prefer to think about it? Doing nothing also renews your ' + seasonWord + ' automatically on ' + autoRenewLong() + ' to ensure you don&rsquo;t miss out on services.')
+        : '';
+      document.getElementById('footnote').innerHTML = (perVisit
+        ? 'Your renewal is confirmed the moment you click the button. You&rsquo;re only charged when service visits happen.'
+        : 'Your renewal is confirmed based on the plan outlined above the moment you click the button.')
+        + autoRenewBit + changeLineHtml();
+      window.__footBase = (perVisit
+        ? 'Your renewal is confirmed the moment you click the button. You&rsquo;re only charged when service visits happen.'
+        : 'Your renewal is confirmed based on the plan outlined above the moment you click the button.');
+      window.__autoBit = autoRenewBit;
       window.footDefault = document.getElementById('footnote').innerHTML;
       document.getElementById('termsline').innerHTML = 'By confirming your renewal, you agree to our <a href="' + TC_RES + '" target="_blank" rel="noopener">' + (season === 'snow' ? 'Residential Snow Terms &amp; Conditions' : 'Residential Terms &amp; Conditions') + '</a>.';
     } else {
-      document.getElementById('footnote').innerHTML = 'Your acceptance confirms your ' + seasonWord + ' . We&rsquo;ll email a confirmation with your service details. This proposal requires your acceptance; services are not automatically renewed.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
+      document.getElementById('footnote').innerHTML = 'Your acceptance confirms your ' + seasonWord + '. We&rsquo;ll email a confirmation with your service details. This proposal requires your acceptance; services are not automatically renewed.' + changeLineHtml();
       window.footDefault = document.getElementById('footnote').innerHTML;
       document.getElementById('termsline').innerHTML = 'By accepting this proposal, you agree to our <a href="' + TC_COM + '" target="_blank" rel="noopener">' + 'Commercial / Strata Terms &amp; Conditions' + '</a>.';
     }
-    document.getElementById('termsline').style.display = 'block';
+    // summer renewals carry the terms elsewhere in the flow (Ethan, Nov 5 2026)
+    document.getElementById('termsline').style.display = (season === 'summer') ? 'none' : 'block';
 
     if(perVisit){
       // Summer renewals with a single installment: per-service card billing OR prepay (Ethan, Oct 31 2026)
@@ -556,8 +567,8 @@
         : (isRes ? 'Pay as you go, billed per visit ' : 'Per-visit invoicing ');
       document.getElementById('inst-dash').textContent = (isRes && !paygInv) ? '' : ', no card required';
       document.getElementById('instopt').innerHTML = (isRes && !paygInv)
-        ? 'You&rsquo;re charged <b>only for visits performed</b>' + (perVisitRates ? ', ' + perVisitRates : '') + ', billed automatically to your card on file after each visit.'
-        : 'We invoice you <b>only for visits performed</b>' + (perVisitRates ? ', ' + perVisitRates : '') + ', payable by e-transfer or cheque. No card needed to accept.';
+        ? ''
+        : 'We invoice you <b>only for visits performed</b>, payable by e-transfer or cheque. No card needed to accept.';
     } else if(isRes){
       var cardBit = (a.hasCard && a.cardLast4) ? ' (&bull;&bull;&bull;&bull; ' + esc(a.cardLast4) + (a.cardExp ? ', expires ' + esc(a.cardExp) : '') + ')' : '';
       document.getElementById('instopt').innerHTML = (a.installments && a.installments > 1 && a.monthly)
@@ -609,6 +620,45 @@
   });
   document.querySelector('input[name=payplan][value=prepay]').closest('label.radio-card').classList.add('checked');
 
+  // a card is only usable while it is still in date; an expired card counts as none
+  function cardExpired(a){
+    var exp = String((a && a.cardExp) || '').trim();
+    var m = exp.match(/(\d{1,2})\s*[\/\-]\s*(\d{2,4})/);
+    if(!m) return false;
+    var mm = Number(m[1]), yy = Number(m[2]);
+    if(yy < 100) yy += 2000;
+    if(!mm || mm > 12) return false;
+    var end = new Date(yy, mm, 1);           // first day of the month after expiry
+    return end.getTime() <= Date.now();
+  }
+  function hasValidCard(a){
+    a = a || window.acct || {};
+    return !!(a.hasCard && a.cardLast4) && !cardExpired(a);
+  }
+  function cardShort(a){
+    a = a || window.acct || {};
+    if(!a.hasCard || !a.cardLast4) return 'Card on file';
+    var brand = a.cardBrand ? esc(a.cardBrand) + ' ' : '';
+    return brand + '<span style="letter-spacing:1px;">&bull;&bull;&bull;&bull;</span> ' + esc(a.cardLast4)
+      + (a.cardExp ? ' &middot; exp ' + esc(a.cardExp) : '');
+  }
+  function changeLineHtml(){
+    return '<span class="fchange" style="display:block;margin-top:8px;">Need to change or cancel instead? Just <a href="'
+      + (document.getElementById('changelink').href || '#') + '">click here</a>.</span>';
+  }
+  window.hasValidCard = hasValidCard;
+  // a card saved while the page is open unlocks the auto-renew sentence
+  function refreshFootnoteForCard(){
+    if(!window.__autoBit || !window.acct || window.acct.residential === false) return;
+    var mode = (document.querySelector('input[name=payplan]:checked') || {}).value || 'installments';
+    if(mode === 'prepay') return;
+    var f = document.getElementById('footnote');
+    if(!f || f.innerHTML.indexOf('Doing nothing also renews') > -1) return;
+    f.innerHTML = (window.__footBase || '') + window.__autoBit + changeLineHtml();
+    window.footDefault = f.innerHTML;
+  }
+  window.refreshFootnoteForCard = refreshFootnoteForCard;
+
   function cardOnFileHtml(a, withChangeLink){
     var brand = a.cardBrand ? esc(a.cardBrand) + ' ' : '';
     var h = '<div class="cardline">Card on file: ' + brand + '<span class="dots">&bull;&bull;&bull;&bull;</span> ' + esc(a.cardLast4 || '') + (a.cardExp ? ' &middot; expires ' + esc(a.cardExp) : '') + '</div>';
@@ -632,6 +682,7 @@
         window.acct.hasCard = true; window.acct.chargeable = !!p.chargeable;
         window.acct.cardLast4 = p.cardLast4; window.acct.cardExp = p.cardExp; window.acct.cardBrand = p.cardBrand;
         stopPoll(); updateCardPrompt();
+        try { if(window.refreshFootnoteForCard) window.refreshFootnoteForCard(); } catch(_) {}
         if(cb) cb(true);
       } else if(cb) cb(false);
     }).catch(function(){ if(cb) cb(false); });
@@ -668,9 +719,9 @@
       btn.innerHTML = 'Pay ' + (a.total ? money(a.total) + ' ' : '') + 'Now (Secure Payment Page) &rarr;';
     }
     if(window.footDefault !== undefined && a.residential !== false){
-      document.getElementById('footnote').innerHTML = 'Your renewal is confirmed the moment your payment goes through. We&rsquo;ll email your receipt. Prefer monthly installments instead? Just pick that option above.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
+      document.getElementById('footnote').innerHTML = 'Your renewal is confirmed the moment your payment goes through. We&rsquo;ll email your receipt. Prefer monthly installments instead? Just pick that option above.' + changeLineHtml();
     } else if(window.footDefault !== undefined){
-      document.getElementById('footnote').innerHTML = 'Your proposal is accepted the moment your payment goes through. We&rsquo;ll email your receipt and confirmation. Prefer monthly invoicing instead? Just pick that option above.' + ' Need to change or cancel instead? Just <a href="' + (document.getElementById('changelink').href || '#') + '">click here</a>.';
+      document.getElementById('footnote').innerHTML = 'Your proposal is accepted the moment your payment goes through. We&rsquo;ll email your receipt and confirmation. Prefer monthly invoicing instead? Just pick that option above.' + changeLineHtml();
     }
   }
 
@@ -745,7 +796,7 @@
   function cardOnFilePanel(a, kind){
     var note;
     if(kind === 'payg' || a.perVisit){
-      note = 'Each completed visit is charged to this card automatically' + (window.perVisitRates ? ', ' + window.perVisitRates : '') + '. No charges unless service happens.';
+      note = '';   // the season summary already explains pay-as-you-go billing (Ethan, Nov 5 2026)
     } else if(Number(a.installments) > 1){
       note = 'Your ' + a.installments + ' payments of <b>' + money(a.monthly) + '</b> are billed to this card on ' + billDay() + ' of each month, starting when you confirm.';
     } else {
@@ -754,7 +805,7 @@
     return '<div class="cofbox" style="display:block;margin-top:14px;">'
       + '<p class="cof-t">Your payment card</p>'
       + cardOnFileHtml(a, true)
-      + '<p style="margin:10px 0 0;">' + note + '</p>'
+      + (note ? '<p style="margin:10px 0 0;">' + note + '</p>' : '')
       + '</div>';
   }
 
@@ -949,9 +1000,8 @@
       h += '<div class="oline addon"><div class="nm"><b>' + esc(x.name) + '</b><small>Add-on</small></div><div>' + money(x.price) + '</div></div>';
     });
     if(withGst){
-      h += '<div class="otot sum"><span>Payment method</span><span>Card on file</span></div>';
-      h += '<div class="otot"><span>Charged</span><span>After each service</span></div>';
-      h += '<div class="otot grand"><span>Amount charged</span><span>The per visit prices</span></div>';
+      h += '<div class="otot sum"><span>Payment method</span><span>' + cardShort(a) + '</span></div>';
+      h += '<div class="otot grand"><span>Charged</span><span>After each service</span></div>';
     } else {
       h += '<div class="otot sum"><span>Subtotal</span><span>' + money(sub) + '</span></div>';
       h += '<div class="otot"><span>GST (5%)</span><span>' + money(gst) + '</span></div>';
@@ -983,7 +1033,7 @@
       : (blocked ? 'Add a card to confirm &nbsp;&rarr;' : 'Confirm &amp; Accept &nbsp;&rarr;');
     h += '<div class="oact"><button id="osumGo" type="button"' + (blocked ? ' class="is-warn"' : '') + '>' + goLabel + '</button></div>';
     h += '<p class="onote">' + (withGst
-        ? 'Per visit prices above already include GST. Nothing is charged unless a service happens.'
+        ? 'Per visit prices above include GST. Nothing is charged unless a service happens.'
         : 'GST included above. Adding or removing services updates this summary instantly.')
        + (blocked ? ' A card on file is needed at checkout. The payment section explains why.' : '') + '</p>';
     body.innerHTML = h;
@@ -1053,11 +1103,10 @@
     var paygSel = ((document.querySelector('input[name=payplan]:checked') || {}).value === 'payg');
     if(paygSel){
       return '<div class="s-sum" id="sumblock">'
-        + '<div class="row"><span>Payment method</span><span>Card on file</span></div>'
-        + '<div class="row"><span>When you are charged</span><span>After each completed service</span></div>'
-        + '<div class="row grand"><span>Amount charged</span><span>The per visit prices above</span></div>'
+        + '<div class="row"><span>Payment method</span><span>' + cardShort(a) + '</span></div>'
+        + '<div class="row grand"><span>Charged</span><span>After each completed service</span></div>'
         + '</div>'
-        + '<div class="s-note" style="padding:9px 14px;">GST is already included in those per visit prices. Nothing is charged unless a service happens.</div>';
+        + '<div class="s-note" style="padding:9px 14px;">Nothing is charged unless a service happens.</div>';
     }
     return '<div class="s-sum" id="sumblock">'
       + '<div class="row"><span>' + (annual ? 'Subtotal' : 'Season subtotal') + '</span><span>' + money(a.subtotal || a.total) + '</span></div>'
@@ -1184,7 +1233,7 @@
             + '<input type="checkbox" data-k="' + esc(x.key) + '" data-p="' + x.price + '" data-n="' + esc(x.name)
             + '" style="width:20px;height:20px;accent-color:#16a34a;"></div></label>';
         });
-        html += '<div class="s-note" style="padding:8px 14px;">Tick any you would like added. Your total updates as you choose.</div>';
+        html += '<div class="s-note" style="padding:8px 14px;">Check any you would like added. Your total updates as you choose.</div>';
         var box = document.getElementById('upsell');
         box.innerHTML = html;
         box.style.display = 'block';
