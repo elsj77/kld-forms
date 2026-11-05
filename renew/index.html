@@ -997,16 +997,13 @@
       h += '<div class="oline' + (it.parent ? ' osub-item' : '') + '"><div class="nm">' + esc(it.name||'Service') + subLine + '</div><div>' + money(amt) + '</div></div>';
     });
     addons.forEach(function(x){
-      h += '<div class="oline addon"><div class="nm"><b>' + esc(x.name) + '</b><small>Add-on</small></div><div>' + money(x.price) + '</div></div>';
+      var amt = Number(x.price || 0);
+      if(withGst) amt = Math.round(amt * 1.05 * 100) / 100;   // per service, GST in
+      var tag = withGst ? '<small>GST included</small>' : '<small>Add-on</small>';
+      h += '<div class="oline addon"><div class="nm"><b>' + esc(x.name) + '</b>' + tag + '</div><div>' + money(amt) + '</div></div>';
     });
     if(withGst){
-      var gstAdd = Math.round(addTotal * 0.05 * 100) / 100;
       h += '<div class="otot sum"><span>Payment method</span><span>' + cardShort(a) + '</span></div>';
-      if(addTotal > 0){
-        h += '<div class="otot"><span>Optional services</span><span>' + money(addTotal) + '</span></div>';
-        h += '<div class="otot"><span>GST (5%)</span><span>' + money(gstAdd) + '</span></div>';
-        h += '<div class="otot"><span>Optional services total</span><span>' + money(addTotal + gstAdd) + '</span></div>';
-      }
       h += '<div class="otot grand"><span>Charged</span><span>After each service</span></div>';
     } else {
       h += '<div class="otot sum"><span>Subtotal</span><span>' + money(sub) + '</span></div>';
@@ -1108,18 +1105,8 @@
     var annual = (a.season === 'annual');
     var paygSel = ((document.querySelector('input[name=payplan]:checked') || {}).value === 'payg');
     if(paygSel){
-      var adds = (typeof osumSelected === 'function') ? osumSelected() : [];
-      var addTot = 0;
-      adds.forEach(function(x){ addTot += Number(x.price || 0); });
-      addTot = Math.round(addTot * 100) / 100;
-      var addGst = Math.round(addTot * 0.05 * 100) / 100;
-      var prow = '<div class="row"><span>Payment method</span><span>' + cardShort(a) + '</span></div>';
-      if(addTot > 0){
-        prow += '<div class="row"><span>Optional services</span><span>' + money(addTot) + '</span></div>'
-          + '<div class="row"><span>GST (5%)</span><span>' + money(addGst) + '</span></div>'
-          + '<div class="row"><span>Optional services total</span><span>' + money(addTot + addGst) + '</span></div>';
-      }
-      prow += '<div class="row grand"><span>Charged</span><span>After each completed service</span></div>';
+      var prow = '<div class="row"><span>Payment method</span><span>' + cardShort(a) + '</span></div>'
+        + '<div class="row grand"><span>Charged</span><span>After each completed service</span></div>';
       return '<div class="s-sum" id="sumblock">' + prow + '</div>'
         + '<div class="s-note" style="padding:9px 14px;">Nothing is charged until the service happens.</div>';
     }
