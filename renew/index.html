@@ -29,6 +29,15 @@
   #rc-installments.checked{border-color:#eab308;background:#fefce8;}
   #rc-prepay.checked{border-color:#16a34a;background:#f0faf3;}
   .radio-card input{margin-right:10px;vertical-align:-2px;}
+  .plancardline{display:none;margin-top:7px;font-size:12.5px;color:#3d4b58;align-items:center;flex-wrap:wrap;}
+  .plancardline.on{display:flex;}
+  .plancardline .pc{font-weight:700;color:#16232f;}
+  .plchg{margin-left:8px;font-size:12px;font-weight:700;color:#15803d;text-decoration:underline;white-space:nowrap;}
+  .osched{margin:14px 0 4px;border-top:1px solid #e6edf2;padding-top:12px;}
+  .osched .os-t{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#8a94a0;margin-bottom:7px;}
+  .osched .osrow{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:#16232f;padding:3px 0;}
+  .osched .osrow.tot{border-top:1px solid #e6edf2;margin-top:6px;padding-top:7px;font-weight:800;}
+  .osched .osnote{font-size:12px;color:#5b6875;margin-top:8px;line-height:1.5;}
   .btn{background-color:#16a34a;color:#fff;padding:14px 24px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-top:18px;width:100%;box-shadow:0 1px 2px rgba(22,163,74,.35),inset 0 1px 0 rgba(255,255,255,.18);transition:background-color .15s ease,box-shadow .15s ease,transform .05s ease;}
   .btn:hover{background-color:#15803d;box-shadow:0 2px 6px rgba(22,163,74,.4);}
   .btn:active{transform:translateY(1px);}
@@ -205,7 +214,7 @@
     <div class="svc" id="upsell" style="display:none;"></div>
 
     <h2 style="margin-top:0;" id="payhead">How would you like to pay?</h2>
-    <label class="radio-card" id="rc-prepay"><input type="radio" name="payplan" value="prepay" checked> <span id="prepayhead">Prepay the full season</span> <span class="sel-amt" id="prepayamt"></span><span class="opt">(one single payment)</span></label>
+    <label class="radio-card" id="rc-prepay"><input type="radio" name="payplan" value="prepay" checked> <span id="prepayhead">Prepay the full season</span> <span class="sel-amt" id="prepayamt"></span><span class="opt">(one single payment)</span><span class="plancardline" id="prepaycard"></span></label>
     <div class="prepaybox" id="prepaybox">
       <div id="prepayhosted">
         <p>Pay your full season in one secure payment:</p>
@@ -216,9 +225,9 @@
       <div class="declinemsg" id="declinemsg"></div>
     </div>
 
-    <label class="radio-card" id="rc-payg" style="display:none"><input type="radio" name="payplan" value="payg"> <span id="payghead">Pay As You Go</span><span class="sel-amt" id="paygamt"></span><br><span class="opt" id="paygopt">Billed after each completed visit, only when service happens.</span></label>
+    <label class="radio-card" id="rc-payg" style="display:none"><input type="radio" name="payplan" value="payg"> <span id="payghead">Pay As You Go</span><span class="sel-amt" id="paygamt"></span><br><span class="opt" id="paygopt">Billed after each completed visit, only when service happens.</span><span class="plancardline" id="paygcard"></span></label>
 
-    <label class="radio-card" id="rc-installments"><input type="radio" name="payplan" value="installments"> <span id="inst-head">Equal Payments </span><span class="sel-amt" id="instamt"></span><span id="inst-dash">, billed to my card on file</span><br><span class="opt" id="instopt"></span></label>
+    <label class="radio-card" id="rc-installments"><input type="radio" name="payplan" value="installments"> <span id="inst-head">Equal Payments </span><span class="sel-amt" id="instamt"></span><span id="inst-dash">, billed to my card on file</span><br><span class="opt" id="instopt"></span><span class="plancardline" id="instcard"></span></label>
     <div class="err" id="err"></div>
     <div id="cardprompt"></div>
     <div id="payconfirm" style="display:none;"></div>
@@ -310,6 +319,25 @@
   function startLong(){ return MFULL[S.m-1] + ' ' + S.d + ', ' + S.y; }            // "November 15, 2026"
   function startShort(){ return MN[S.m-1] + ' ' + S.d + ', ' + S.y; }              // "Nov 15, 2026"
   function billDay(){ return 'the ' + ord(S.d); }
+  // summer renewals bill the first installment on May 1 of the season year, then the 1st monthly.
+  // Everything else (winter/snow especially) keeps the quote's own start date.
+  var SUMMER_INST_START = { m:5, d:1 };
+  function instFirst(){ return (window.acct && window.acct.season === 'summer') ? SUMMER_INST_START : { m:S.m, d:S.d }; }
+  function instDates(n){
+    var f = instFirst(), out = [];
+    for(var i=0;i<n;i++){
+      var d = new Date(S.y, (f.m - 1) + i, f.d);
+      out.push(MN[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear());
+    }
+    return out;
+  }
+  function instDayPhrase(){ var f = instFirst(); return 'the ' + ord(f.d); }
+  function instStartPhrase(){
+    var f = instFirst();
+    return (window.acct && window.acct.season === 'summer')
+      ? (' starting ' + MFULL[f.m-1] + ' ' + f.d + ', ' + S.y)
+      : (' starting ' + startLong());
+  }
   // auto-renew cut-off: the 2027 renewal copy promises Feb 1 (Ethan, Nov 5 2026).
   // Seasons that start later in the year keep their own start date.
   function autoRenewLong(){ return (S && S.m <= 4) ? ('February 1, ' + S.y) : startLong(); }                                   // "the 15th"
@@ -572,8 +600,8 @@
     } else if(isRes){
       var cardBit = (a.hasCard && a.cardLast4) ? ' (&bull;&bull;&bull;&bull; ' + esc(a.cardLast4) + (a.cardExp ? ', expires ' + esc(a.cardExp) : '') + ')' : '';
       document.getElementById('instopt').innerHTML = (a.installments && a.installments > 1 && a.monthly)
-        ? 'Your season split into <b>' + a.installments + ' equal payments</b> of <b>' + money(a.monthly) + '</b>, billed to your card on file' + cardBit + ' automatically on ' + billDay() + ' of each month.'
-        : 'Your renewal is confirmed right away. Your card is billed automatically on ' + billDay() + ' of each month.';
+        ? 'Your season split into <b>' + a.installments + ' equal payments</b> of <b>' + money(a.monthly) + '</b>, billed to your card on file' + cardBit + ' automatically on ' + instDayPhrase() + ' of each month' + instStartPhrase() + '.'
+        : 'Your renewal is confirmed right away. Your card is billed automatically on ' + instDayPhrase() + ' of each month.';
     } else {
       document.getElementById('instopt').innerHTML = (a.installments && a.installments > 1 && a.monthly)
         ? 'We&rsquo;ll invoice you ' + a.installments + ' equal monthly payments of <b>' + money(a.monthly) + '</b>, starting ' + startLong() + '. Pay by EFT, e-transfer, or cheque. No card needed to accept.'
@@ -771,6 +799,25 @@
   // Cards and billing notes all render in #cardprompt, directly under the three
   // plans. The old second box (#cofbox) is retired so a "card required" block can
   // never appear twice, and the plan choice drives every sentence in one place.
+  function planCardLine(prefix){
+    var a = window.acct || {};
+    if(!(a.hasCard && a.cardLast4)) return '';
+    return '<span class="pc">' + prefix + ' ' + (a.cardBrand ? esc(a.cardBrand) + ' ' : '')
+      + '<span style="letter-spacing:1px;">&bull;&bull;&bull;&bull;</span> ' + esc(a.cardLast4)
+      + (a.cardExp ? ' &middot; exp ' + esc(a.cardExp) : '') + '</span>'
+      + '<a class="plchg" href="' + cardUrlFor() + '" target="_blank" rel="noopener">Use a different card</a>';
+  }
+  function renderPlanCards(){
+    [['prepaycard','Paid with'],['paygcard','Billed to'],['instcard','Billed to']].forEach(function(pair){
+      var el = document.getElementById(pair[0]);
+      if(!el) return;
+      var h = planCardLine(pair[1]);
+      el.innerHTML = h;
+      el.className = 'plancardline' + (h ? ' on' : '');
+    });
+  }
+  window.renderPlanCards = renderPlanCards;
+
   function cardUrlFor(){
     return 'https://card.kootenaylawndoctor.com/' + (qq ? ('?q=' + encodeURIComponent(qq)) : ('?t=' + encodeURIComponent(e)));
   }
@@ -854,6 +901,7 @@
     if(a.installments && a.monthly){ document.getElementById('instamt').textContent = '' + (a.installments === 1 ? money(a.monthly) : money(a.monthly) + '/mo \u00b7 ' + a.installments + ' equal payments') + ' '; }
     if(a.total){ document.getElementById('prepayamt').textContent = '' + money(a.total) + ' '; }
     try { renderCofBox(); } catch(_) {}
+    try { renderPlanCards(); } catch(_) {}
     try { if(window.renderServicesBlock) window.renderServicesBlock(); } catch(_) {}
     try { if(window.paintSum) window.paintSum(); } catch(_) {}
 
@@ -964,14 +1012,15 @@
     var nInst = Number(a.installments) || 1;
     var mode = (document.querySelector('input[name=payplan]:checked')||{}).value || 'installments';
     if(mode === 'prepay') return { head: 'Prepay in full', body: money(tot) + ' in one payment today.' };
+    var toCard = (a.hasCard && a.cardLast4) ? ('your ' + (a.cardBrand ? esc(a.cardBrand) + ' ' : '') + 'card ending ' + esc(a.cardLast4)) : 'your card on file';
     if(mode === 'payg'){
       return {
         head: 'Pay as you go',
-        body: 'Charged to your card on file after each completed visit, at the per visit prices above. Nothing is charged until the service happens.'
+        body: 'Charged to ' + toCard + ' after each completed visit, at the per visit prices above. Nothing is charged until the service happens.'
       };
     }
-    if(nInst > 1) return { head: nInst + ' monthly payments', body: money(Math.round(tot*100/nInst)/100) + ' per month to your card on file.' };
-    return { head: 'Automatic billing per service', body: 'Each visit is charged to your card on file when the service is completed.' };
+    if(nInst > 1) return { head: nInst + ' monthly payments', body: money(Math.round(tot*100/nInst)/100) + ' per month to ' + toCard + instStartPhrase() + '.' };
+    return { head: 'Automatic billing per service', body: 'Each visit is charged to ' + toCard + ' when the service is completed.' };
   }
   function renderOrderSummary(){
     var a = window.acct || {}, box = document.getElementById('osum'), body = document.getElementById('osumBody');
@@ -1010,6 +1059,20 @@
       h += '<div class="otot"><span>GST (5%)</span><span>' + money(gst) + '</span></div>';
       h += '<div class="otot grand"><span>Total</span><span>' + money(tot) + '</span></div>';
     }
+    if(!withGst && modeItems === 'installments' && a.season === 'summer'){
+      var nSch = Number(a.installments) || 1;
+      if(nSch > 1){
+        var eachAmt = Math.round(tot * 100 / nSch) / 100;
+        h += '<div class="osched"><div class="os-t">Payment schedule</div>';
+        instDates(nSch).forEach(function(dt){
+          h += '<div class="osrow"><span>' + dt + '</span><span>' + money(eachAmt) + '</span></div>';
+        });
+        h += '<div class="osnote">' + (a.hasCard && a.cardLast4
+          ? ('Billed automatically to your ' + (a.cardBrand ? esc(a.cardBrand) + ' ' : '') + 'card ending ' + esc(a.cardLast4) + ' on the 1st of each month. ')
+          : 'Billed to the card you add when you confirm, on the 1st of each month. ')
+          + '<a class="plchg" href="' + cardUrlFor() + '" target="_blank" rel="noopener">Use a different card</a></div></div>';
+      }
+    }
     var nInst0 = Number(a.installments) || 1;
     var curMode = (document.querySelector('input[name=payplan]:checked')||{}).value || 'installments';
     var chips = [];
@@ -1036,7 +1099,6 @@
       : (blocked ? 'Add a card to confirm &nbsp;&rarr;' : 'Confirm &amp; Accept &nbsp;&rarr;');
     h += '<div class="oact"><button id="osumGo" type="button"' + (blocked ? ' class="is-warn"' : '') + '>' + goLabel + '</button></div>';
     var noteBits = [];
-    if(!withGst) noteBits.push('GST included above. Adding or removing services updates this summary instantly.');
     if(blocked) noteBits.push('A card on file is needed at checkout. The payment section explains why.');
     if(noteBits.length) h += '<p class="onote">' + noteBits.join(' ') + '</p>';
     body.innerHTML = h;
