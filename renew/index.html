@@ -144,6 +144,7 @@
   #osum .oline{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed #e6efe8;}
   #osum .oline .nm{flex:1 1 auto;}
   #osum .oline .nm small{display:block;color:#94a3b8;font-size:11px;font-weight:400;}
+  #osum .oline.osub-item{padding-left:8px;border-bottom-style:dotted;}
   #osum .oline.addon{background:#f4fbf6;border-radius:6px;padding:6px 8px;border-bottom:none;margin-top:4px;}
   #osum .otot{display:flex;justify-content:space-between;padding:4px 0;}
   #osum .otot.sum{border-top:1px solid #dbe7dd;margin-top:6px;padding-top:8px;}
@@ -957,7 +958,9 @@
     a.items.forEach(function(it){
       if(!it || !Number(it.rate)) return;
       var amt = (it.total != null) ? Number(it.total) : Number(it.rate) * (Number(it.qty)||1);
-      h += '<div class="oline"><div class="nm">' + esc(it.name||'Service') + '<small>' + (Number(it.qty)>1 ? (Number(it.qty) + ' &times; ' + money(it.rate)) : money(it.rate) + ' each') + '</small></div><div>' + money(amt) + '</div></div>';
+      // package children carry their own price; no "each" subtitle for one-time applications
+      var subLine = it.parent ? '' : '<small>' + (Number(it.qty)>1 ? (Number(it.qty) + ' &times; ' + money(it.rate)) : money(it.rate) + ' each') + '</small>';
+      h += '<div class="oline' + (it.parent ? ' osub-item' : '') + '"><div class="nm">' + esc(it.name||'Service') + subLine + '</div><div>' + money(amt) + '</div></div>';
     });
     addons.forEach(function(x){
       h += '<div class="oline addon"><div class="nm"><b>' + esc(x.name) + '</b><small>Add-on</small></div><div>' + money(x.price) + '</div></div>';
