@@ -246,20 +246,24 @@
   // upsell engine. Resolve the quote GUID to its portal token and reload on the token path
   // (Oct 31 2026, Ethan: proposal #10332 showed wrong services and no add-ons).
   var legacyQ = qs.get('legacy') === '1';
+  var estNo = eq; // estimate-number hint: SAP's own ID for this quote
   if(!e && qq && !legacyQ){
     fetch(API_RS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ q: qq }) })
       .then(function(r){ return r.json(); })
       .then(function(j){
+        // The estimate is identified by SAP's own ID for it, never by a minted token:
+        // renewResolve returns the quote's estimate number, so carry it as the ?e= hint.
+        estNo = eq || (j && j.estimate_number ? String(j.estimate_number) : '');
         if(j && j.token){
-          var next = '?t=' + encodeURIComponent(j.token) + (eq ? '&e=' + encodeURIComponent(eq) : '');
+          var next = '?t=' + encodeURIComponent(j.token) + (estNo ? '&e=' + encodeURIComponent(estNo) : '');
           location.replace(next);
           return;
         }
-        var back = '?q=' + encodeURIComponent(qq) + '&legacy=1' + (eq ? '&e=' + encodeURIComponent(eq) : '');
+        var back = '?q=' + encodeURIComponent(qq) + '&legacy=1' + (estNo ? '&e=' + encodeURIComponent(estNo) : '');
         location.replace(back);
       })
       .catch(function(){
-        location.replace('?q=' + encodeURIComponent(qq) + '&legacy=1' + (eq ? '&e=' + encodeURIComponent(eq) : ''));
+        location.replace('?q=' + encodeURIComponent(qq) + '&legacy=1' + (estNo ? '&e=' + encodeURIComponent(estNo) : ''));
       });
     return;
   }
