@@ -424,6 +424,53 @@
   // when the main APIs are down — the page reports, the logger is a separate deploy.
   // Token policy: send only the first 8 chars of the token; q links send the estimate GUID (public in the emailed URL).
   var API_LOG = 'https://doc-pro-781789de.base44.app/functions/portalAccessLog';
+  var API_AUDIT = 'https://doc-pro-781789de.base44.app/functions/portalAudit';
+
+  // customer audit trail (Nov 6 2026): every meaningful step writes a PortalAuditLog row
+  // so we can prove what a client chose and accepted, and see any errors they hit.
+  var AUD_SID = (function(){
+    try {
+      var k = '__kld_portal_sid', v = sessionStorage.getItem(k);
+      if(!v){ v = 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); sessionStorage.setItem(k, v); }
+      return v;
+    } catch(_){ return 's' + Date.now().toString(36); }
+  })();
+  function auditSel(){
+    var sel = window.upsellSel || {}, out = [];
+    Object.keys(sel).forEach(function(k){
+      if(sel[k]) out.push(String(sel[k].name || k) + ' $' + Number(sel[k].price || 0).toFixed(2));
+    });
+    return out.join('; ');
+  }
+  function audit(event, extra){
+    try{
+      var a = window.acct || {};
+      var body = {
+        session_id: AUD_SID,
+        event: event,
+        page: 'renew',
+        estimate_number: String(a.number || eq || '').slice(0, 12),
+        estimate_id: String(estId || '').slice(0, 40),
+        customer_id: String(custId || '').slice(0, 40),
+        client_name: [a.first, a.last].filter(Boolean).join(' '),
+        season: a.season || '',
+        variant: (a.residential === false ? 'commercial' : 'residential'),
+        plan: (document.querySelector('input[name=payplan]:checked') || {}).value || '',
+        amount: (a.total != null ? Number(a.total) : null),
+        monthly: (a.monthly != null ? Number(a.monthly) : null),
+        installments: (a.installments != null ? Number(a.installments) : null),
+        addons: auditSel(),
+        card_brand: a.cardBrand || '',
+        card_last4: a.cardLast4 || '',
+        user_agent: String(navigator.userAgent || '').slice(0, 200),
+        referrer: String(document.referrer || '').slice(0, 300),
+        page_url: String(location.href || '').slice(0, 300)
+      };
+      if(extra){ for(var kk in extra){ body[kk] = extra[kk]; } }
+      fetch(API_AUDIT, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}).catch(function(){});
+    }catch(_){ /* audit must never break the flow */ }
+  }
+  window.kldAudit = audit;
   function crumb(code, detail, mode){
     try{
       var gm = String(qq||'').match(/[0-9a-fA-F-]{36}/);
@@ -433,6 +480,7 @@
         error_code: String(code||'').slice(0,40), detail: String(detail||'').slice(0,200),
         user_agent: String(navigator.userAgent||'').slice(0,180)};
       fetch(API_LOG, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}).catch(function(){});
+      audit('error', { detail: (mode || 'lookup') + ': ' + String(code || '') + (detail ? ' - ' + String(detail).slice(0, 240) : '') });
     }catch(err){ /* never block the error UI */ }
   }
 
@@ -648,6 +696,9 @@
     }
     try{ window.scrollTo(0,0); }catch(err){}
     updateCardPrompt();
+    audit('page_open', { detail: 'loaded ' + (window.acct.residential === false ? 'commercial' : 'residential') + ' '
+      + (window.acct.season || '') + ' portal, default plan ' + ((document.querySelector('input[name=payplan]:checked') || {}).value || '')
+      + ', card ' + (window.acct.hasCard && window.acct.cardLast4 ? 'on file ****' + window.acct.cardLast4 : 'not on file') });
   }).catch(function(err){ crumb('network', String((err && err.message) || err || 'lookup fetch failed'), 'lookup'); fail('Connection problem. Please try again in a few minutes, or call our office.'); });
 
   document.querySelectorAll('input[name=payplan]').forEach(function(r){
@@ -655,6 +706,7 @@
       document.querySelectorAll('input[name=payplan]').forEach(function(o){ o.closest('label.radio-card').classList.remove('checked'); });
       r.closest('label.radio-card').classList.add('checked');
       updateCardPrompt();
+      audit('plan_change', { detail: 'selected ' + r.value });
     });
   });
   document.querySelector('input[name=payplan][value=prepay]').closest('label.radio-card').classList.add('checked');
@@ -721,6 +773,7 @@
         window.acct.hasCard = true; window.acct.chargeable = !!p.chargeable;
         window.acct.cardLast4 = p.cardLast4; window.acct.cardExp = p.cardExp; window.acct.cardBrand = p.cardBrand;
         stopPoll(); updateCardPrompt();
+        audit('card_detected', { detail: 'card ending ' + p.cardLast4 + ' now on file' });
         try { if(window.refreshFootnoteForCard) window.refreshFootnoteForCard(); } catch(_) {}
         if(cb) cb(true);
       } else if(cb) cb(false);
@@ -784,6 +837,7 @@
       dm.style.display = 'none'; dm.textContent = '';
       loadJson(API_PAY, {t:e, e:eq, q:qq, mode:'charge', confirm:true}).then(function(j){
         if(j.ok){
+          audit('charge_ok', { detail: 'charged ' + money(j.amount) + ' to card ****' + String(j.last4 || (window.acct.cardLast4 || '')) });
           formwrap.style.display='none'; content.style.display='block';
           content.innerHTML = '<h1>Paid: Season Covered</h1><p><span class="ok">&#10003;</span></p>'
             + '<p style="font-size:16px;">Thanks, ' + esc((window.acct.first||'')) + '. We charged <b>' + money(j.amount) + '</b> to your card ending in ' + esc(j.last4 || (window.acct.cardLast4||'')) + '.</p>'
@@ -792,6 +846,7 @@
           window.scrollTo(0,0);
         } else {
           crumb('charge_' + (j.error || (j.declined ? 'declined' : 'failed')), j.friendly || j.message || '', 'charge');
+          audit('charge_fail', { detail: String(j.error || (j.declined ? 'card declined' : 'charge failed')) + (j.message ? ' - ' + String(j.message).slice(0, 200) : '') });
           yes.disabled = false; yes.innerHTML = 'Yes, charge my card';
           dm.textContent = j.declined ? j.friendly : 'We couldn\'t process the charge just now. Please try again, or use the secure payment page.';
           dm.style.display = 'block';
@@ -1340,6 +1395,7 @@
               ? { key:k, price: Number(cb.getAttribute('data-p')), name: cb.getAttribute('data-n') }
               : null;
             upTotals();
+            audit('addons_change', { detail: cb.checked ? ('added ' + cb.getAttribute('data-n')) : ('removed ' + cb.getAttribute('data-n')) });
           });
         });
       })
@@ -1353,6 +1409,7 @@
     var paymode = btn.dataset.paymode || '';
     if(window.__submitBlocked === true && !paymode){
       focusCardNeeded();
+      audit('card_blocked', { detail: 'clicked confirm with no card on file' });
       showErr('Add a card on file first. Or choose “Prepay the full season” to pay once instead.');
       return;
     }
@@ -1389,6 +1446,7 @@
       else {
         var link = document.getElementById('prepaylink');
         window.open(link.href, '_blank', 'noopener');
+        audit('prepay_open', { detail: 'opened the secure prepay page for ' + money(window.acct.total) });
         showErr('Finish your payment in the secure window that just opened. Your renewal is confirmed the moment your payment goes through. Then you can close this page.');
       }
       return;
@@ -1445,6 +1503,7 @@
     lines.push('CONTACT PREFERENCE: Email.');
     var details = lines.join(' ').replace(/&mdash;/g,'—').replace(/&rsquo;/g,"'");
 
+    audit('submit_attempt', { detail: 'confirming ' + selRaw + ' with ' + ((a.hasCard && a.cardLast4) ? ('card ****' + a.cardLast4) : 'no card on file') });
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Confirming&hellip;';
     fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
       t:e, e:eq, q:qq, mode:'submit', choice:'1', kind:'confirm', details:details, contactPref:'1',
@@ -1455,6 +1514,7 @@
       .then(function(r){ return r.json(); })
       .then(function(j){
         if(j.ok){
+          audit('submit_ok', { detail: 'renewal confirmed on ' + selRaw + ' plan' });
           formwrap.style.display='none'; content.style.display='block';
           var cardMsg, headMsg;
           if(a.residential && a.perVisit && a.paygInv && !a.hasCard){
@@ -1490,10 +1550,12 @@
           window.scrollTo(0,0);
         } else {
           btn.disabled = false; btn.dataset.busy = ''; btn.innerHTML = 'Confirm My Renewal On Monthly Installments &nbsp;&rarr;';
+          audit('submit_fail', { detail: 'portal returned ' + String(j.error || 'error') });
           showErr(j.error==='missing_fields' ? 'Please fill in the required fields and try again.' : 'We couldn\'t send your confirmation just now. Please try again in a moment, or call us at 250-489-2031.');
         }
       })
       .catch(function(){
+        audit('submit_fail', { detail: 'network failure sending the confirmation' });
         btn.disabled = false; btn.dataset.busy = ''; btn.innerHTML = 'Confirm My Renewal On Monthly Installments &nbsp;&rarr;';
         showErr('Connection problem. Please try again in a few minutes, or call our office at 250-489-2031.');
       });
