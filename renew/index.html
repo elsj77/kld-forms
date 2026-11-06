@@ -595,6 +595,15 @@
         document.getElementById('paygamt').textContent = '\u00b7 billed per visit ';
       }
     }
+    // Monthly installments minimum (Ethan, Nov 6 2026): a summer season worth less than $900 is
+    // NOT eligible for equal payments, even when SAP lists more than one installment on the quote.
+    // Winter/snow keeps its existing installment behaviour.
+    var instBlocked = false;
+    if(season === 'summer' && !perVisit && Number(a.total) > 0 && Number(a.total) < 900){
+      instBlocked = true;
+      a.installmentsBlocked = true;
+    }
+    window.__instBlocked = instBlocked;
     // office-approved exception: invoiced PAYG without a card (Renewal Type pre-set 'Residential Pay As You Go - No Card Required')
     var paygInv = (a.payg_invoiced === true);
     a.paygInv = paygInv;
@@ -613,7 +622,14 @@
     document.getElementById('prepayhead').textContent = annual ? 'Prepay the year' : 'Prepay the full season';
     document.getElementById('inst-head').textContent = isRes ? 'Equal Payments ' : 'Monthly invoicing ';
     var rcI = document.getElementById('rc-installments');
-    if(rcI) rcI.style.display = (Number(a.installments) > 1) ? '' : (season === 'summer' ? '' : '');
+    if(rcI) rcI.style.display = instBlocked ? 'none' : ((Number(a.installments) > 1) ? '' : (season === 'summer' ? '' : ''));
+    if(instBlocked){
+      // the plan the client ends up on is prepay unless they pick pay as you go
+      var _ip = document.querySelector('input[name=payplan][value=installments]');
+      var _pp = document.querySelector('input[name=payplan][value=prepay]');
+      if(_ip && _ip.checked && _pp){ _pp.checked = true; }
+      window.__planBlocked = true;
+    }
     document.getElementById('inst-dash').textContent = isRes ? '' : ', no card required';
     document.getElementById('submitbtn').innerHTML = isRes ? 'Confirm My Renewal &nbsp;&rarr;' : 'Accept My Proposal &nbsp;&rarr;';
     window.footDefault = null;
@@ -686,6 +702,7 @@
     document.getElementById('prepaylink').href = qq ? ('https://card.kootenaylawndoctor.com/pay/?q=' + encodeURIComponent(qq)) : ('https://card.kootenaylawndoctor.com/pay/?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : ''));
     content.style.display='none';
     formwrap.style.display='block';
+    if(planP === 'installments' && instBlocked){ planP = 'prepay'; }
     if(planP === 'prepay' || planP === 'installments' || planP === 'payg'){
       var pr = document.querySelector('input[name=payplan][value=' + planP + ']');
       if(pr){
@@ -697,7 +714,7 @@
     try{ window.scrollTo(0,0); }catch(err){}
     updateCardPrompt();
     audit('page_open', { detail: 'loaded ' + (window.acct.residential === false ? 'commercial' : 'residential') + ' '
-      + (window.acct.season || '') + ' portal, default plan ' + ((document.querySelector('input[name=payplan]:checked') || {}).value || '')
+      + (window.acct.season || '') + ' portal' + (window.__instBlocked ? ', monthly installments not offered (season under $900)' : '') + ', default plan ' + ((document.querySelector('input[name=payplan]:checked') || {}).value || '')
       + ', card ' + (window.acct.hasCard && window.acct.cardLast4 ? 'on file ****' + window.acct.cardLast4 : 'not on file') });
   }).catch(function(err){ crumb('network', String((err && err.message) || err || 'lookup fetch failed'), 'lookup'); fail('Connection problem. Please try again in a few minutes, or call our office.'); });
 
@@ -1497,7 +1514,7 @@
       else lines.push('NO CARD ON FILE: invoicing terms.');
       if(a.installments && a.monthly && a.installments > 1) lines.push('PLAN: ' + a.installments + ' invoices of $' + Number(a.monthly).toFixed(2) + ' starting ' + startShort() + '.');
     }
-    if(a.installments && a.monthly && !a.perVisit){
+    if(a.installments && a.monthly && !a.perVisit && !a.installmentsBlocked){
       lines.push('MONTHLY PLAN: ' + a.installments + ' installments of $' + Number(a.monthly).toFixed(2) + ', billed on ' + billDay() + ' of each month starting ' + startLong() + '.');
     }
     if(a.hasCard && a.cardLast4) lines.push('CARD ON FILE: ends ' + a.cardLast4 + (a.cardExp ? ', exp ' + a.cardExp : '') + '.');
