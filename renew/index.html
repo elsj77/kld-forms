@@ -1056,6 +1056,7 @@
           try{
             fetch(API_LOG, { method:'POST', headers:{'Content-Type':'application/json'},
               body: JSON.stringify({ page: 'renew', mode: 'apply_failed', detail: JSON.stringify(res).slice(0, 800), estimate_number: (window.acct||{}).estNum || null }) });
+            audit('error', { detail: 'renewal apply failed: ' + JSON.stringify(res).slice(0, 260) });
           }catch(_){}
         });
     }catch(_){}
@@ -1363,6 +1364,7 @@
                                          lawn: (u && u.lawn_app_price) || null, est: estNo || null,
                                          ua: (navigator.userAgent || '').slice(0,90) }).slice(0,700),
                 estimate_number: estNo || null, user_agent: (navigator.userAgent || '').slice(0,120) }) });
+            audit('error', { detail: 'add-ons returned no priced options (attempt ' + (attempt + 1) + ')' });
           }catch(_){}
           if(holder){
             holder.innerHTML = '<div class="s-t">Add these to your season <span style="font-weight:400;color:#475569;">(optional)</span></div>'
