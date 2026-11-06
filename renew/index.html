@@ -187,16 +187,24 @@
   #osum .oact button:hover{background:#15803d;}
   #osum .oact button[disabled]{background:#a7d7b9;cursor:not-allowed;}
   #osum .onote{margin-top:8px;font-size:11px;color:#64748b;line-height:1.45;}
-  #osum .ocollapse{position:absolute;right:10px;top:6px;background:none;border:none;font-size:17px;color:#94a3b8;cursor:pointer;display:none;}
+  #osum .obar{display:none;}
   /* side summary: keep the content column centred and float the panel to its right
      (the old right padding dragged the column off-centre) */
   @media(min-width:1360px){
     #osum{left:calc(50% + 336px);right:auto;top:24px;width:340px;}
   }
   @media(max-width:1359px){
-    #osum{left:12px;right:12px;width:auto;top:auto;bottom:10px;max-height:58vh;}
+    #osum{left:12px;right:12px;width:auto;top:auto;bottom:10px;max-height:72vh;padding:0;overflow:hidden;}
+    #osum.show{display:flex;flex-direction:column;}
+    #osum .obar{display:flex;align-items:center;gap:10px;width:100%;background:#f4fbf6;border:none;border-bottom:1px solid #dbe7dd;padding:13px 14px;font-family:inherit;font-size:13.5px;font-weight:800;color:#14532d;cursor:pointer;text-align:left;}
+    #osum .obar .obt{flex:1 1 auto;min-width:0;}
+    #osum .obar .obamt{font-weight:800;color:#14532d;white-space:nowrap;font-variant-numeric:tabular-nums;font-size:13px;}
+    #osum .obar .obact{flex:0 0 auto;font-size:11.5px;font-weight:800;color:#15803d;border:1px solid #cfe8d8;background:#fff;border-radius:20px;padding:5px 10px;white-space:nowrap;}
     #osum.osum-min .obody{display:none;}
-    #osum .ocollapse{display:block;}
+    #osum.osum-min .obar{border-bottom:none;}
+    #osum .obody{overflow:auto;padding:14px 14px 16px;}
+    #osum h3, #osum .osub{display:none;}
+    body.osum-on{padding-bottom:74px;}
   }
 </style>
 </head><body><div class="wrap">
@@ -251,7 +259,7 @@
       </div>
     </div></div>
 </div>
-<div id="osum"><button class="ocollapse" id="osumToggle" type="button" aria-label="Toggle summary">&#9662;</button><div class="obody" id="osumBody"></div></div>
+<div id="osum"><button class="obar" id="osumToggle" type="button" aria-expanded="false" aria-controls="osumBody"><span class="obt">Your <span id="obw">season</span> summary</span><span class="obamt" id="obamt"></span><span class="obact" id="obact">View &#9652;</span></button><div class="obody" id="osumBody"></div></div>
 <script>
 (function(){
   var API = 'https://doc-pro-781789de.base44.app/functions/snowChangeRequest';
@@ -1112,7 +1120,14 @@
     if(noteBits.length) h += '<p class="onote">' + noteBits.join(' ') + '</p>';
     body.innerHTML = h;
     box.classList.add('show');
-    if(window.innerWidth >= 1360) document.body.classList.add('osum-on');
+    document.body.classList.add('osum-on');
+    var oba = document.getElementById('obamt');
+    if(oba) oba.textContent = withGst ? 'per visit prices' : money(tot);
+    var obw = document.getElementById('obw');
+    if(obw) obw.textContent = window.__seasonWord || 'season';
+    if(!window.__osumInit && window.innerWidth < 1360) box.classList.add('osum-min');
+    window.__osumInit = true;
+    try { if(window.syncOsumBar) window.syncOsumBar(); } catch(_) {}
     Array.prototype.forEach.call(body.querySelectorAll('.ochip'), function(cb){
       cb.addEventListener('click', function(){
         var r = document.querySelector('input[name=payplan][value="' + cb.getAttribute('data-v') + '"]');
@@ -1134,7 +1149,15 @@
   window.renderOrderSummary = renderOrderSummary;
   (function(){
     var tb = document.getElementById('osumToggle'), box = document.getElementById('osum');
-    if(tb && box) tb.addEventListener('click', function(){ box.classList.toggle('osum-min'); });
+    function syncBar(){
+      if(!tb || !box) return;
+      var min = box.classList.contains('osum-min');
+      tb.setAttribute('aria-expanded', min ? 'false' : 'true');
+      var act = document.getElementById('obact');
+      if(act) act.innerHTML = min ? 'View &#9652;' : 'Hide &#9662;';
+    }
+    window.syncOsumBar = syncBar;
+    if(tb && box) tb.addEventListener('click', function(){ box.classList.toggle('osum-min'); syncBar(); });
   })();
 
   // the season service list + totals; repainted whenever the plan changes so the
