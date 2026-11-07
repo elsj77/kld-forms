@@ -699,7 +699,7 @@
       + '<div class="acct-cell tagcell"><span class="quote' + (season === 'summer' ? ' green' : '') + '">' + (isRes ? sc.tagRes : sc.tagCom) + esc(a.number || '') + '</span></div>'
       + '</div>';
     who.style.display='block';
-    document.getElementById('prepaylink').href = qq ? ('https://card.kootenaylawndoctor.com/pay/?q=' + encodeURIComponent(qq)) : ('https://card.kootenaylawndoctor.com/pay/?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : ''));
+    document.getElementById('prepaylink').href = (qq ? ('https://card.kootenaylawndoctor.com/pay/?q=' + encodeURIComponent(qq)) : ('https://card.kootenaylawndoctor.com/pay/?t=' + encodeURIComponent(e) + (eq ? '&e=' + encodeURIComponent(eq) : ''))) + (season ? ('&s=' + encodeURIComponent(season)) : '');
     content.style.display='none';
     formwrap.style.display='block';
     if(planP === 'installments' && instBlocked){ planP = 'prepay'; }
@@ -852,7 +852,7 @@
       var dm = document.getElementById('chargedecline');
       yes.disabled = true; yes.innerHTML = '<span class="spinner"></span>Charging your card&hellip;';
       dm.style.display = 'none'; dm.textContent = '';
-      loadJson(API_PAY, {t:e, e:eq, q:qq, mode:'charge', confirm:true}).then(function(j){
+      loadJson(API_PAY, {t:e, e:eq, q:qq, mode:'charge', confirm:true, season:(window.acct||{}).season || season}).then(function(j){
         if(j.ok){
           audit('charge_ok', { detail: 'charged ' + money(j.amount) + ' to card ****' + String(j.last4 || (window.acct.cardLast4 || '')) });
           formwrap.style.display='none'; content.style.display='block';
