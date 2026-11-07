@@ -269,6 +269,7 @@
   var API_FL  = 'https://doc-pro-781789de.base44.app/functions/summerClientFlags'; // AccountType + no-card exception
   var API_RS  = 'https://doc-pro-781789de.base44.app/functions/renewResolve'; // quote GUID -> portal token (Oct 31 2026)
   var API_RADD= 'https://doc-pro-781789de.base44.app/functions/summerRoundAdd'; // adds + books every selected add-on
+  var API_ALOG= 'https://doc-pro-781789de.base44.app/functions/portalAddonSale'; // revenue log for optional add-ons
   var API_APPLY= 'https://doc-pro-781789de.base44.app/functions/summerRenewalApply'; // packages + installment contract + prepay check
   var API_LOG = 'https://doc-pro-781789de.base44.app/functions/portalAccessLog';
   window.__flagsP = (function(){
@@ -1062,6 +1063,18 @@
         if(x.price) addons[kind].rate = Number(x.price);
       });
       if(!rounds.length && !Object.keys(addons).length) return;
+      // revenue log (Ethan, Nov 7 2026): one row per optional service, so marketing and finance
+      // can see exactly what add-ons were taken and what they added. Fire and forget.
+      try{
+        var logRows = pk.map(function(x){
+          var k = String(x.key || ''), kind = k.indexOf('granular') > -1 ? 'granular' : (k.indexOf('aeration') > -1 ? 'aeration' : (k.indexOf('round_') === 0 ? 'round' : 'other'));
+          var seas = k.indexOf('spring') > -1 ? 'spring' : (k.indexOf('summer') > -1 ? 'summer' : (k.indexOf('fall') > -1 ? 'fall' : 'season'));
+          return { key:k, name:String(x.label || x.name || k), kind:kind, season:seas, rate:Number(x.price || 0) };
+        });
+        if(logRows.length) fetch(API_ALOG, { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ estimate_number: a.estNum || (e||''), estimate_id: a.estimate_id || '', customer_id: a.customer_id || '',
+            client_name: a.client || '', season_year: 2027, plan: mode, accepted_at: new Date().toISOString(), addons: logRows }) }).catch(function(){});
+      }catch(_){}
       var payload = { token: e, estimate_id: a.estimate_id || '', customer_id: a.customer_id || '', dry_run: false, confirm: true,
         billing: { mode: mode, require_card: true },
         lawn: { rounds: rounds, rate: rate },
