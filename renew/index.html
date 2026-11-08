@@ -264,6 +264,7 @@
 (function(){
   var API = 'https://doc-pro-781789de.base44.app/functions/snowChangeRequest';
   var API_PAY = 'https://doc-pro-781789de.base44.app/functions/snowRenewCharge';
+  var API_CHARGE = 'https://doc-pro-781789de.base44.app/functions/snowRenewChargeV2';
   var API_UP  = 'https://doc-pro-781789de.base44.app/functions/summerUpsellPublic';
   var API_RD  = 'https://doc-pro-781789de.base44.app/functions/summerRoundUpsell'; // missing-round add-ons
   var API_FL  = 'https://doc-pro-781789de.base44.app/functions/summerClientFlags'; // AccountType + no-card exception
@@ -856,7 +857,7 @@
       var dm = document.getElementById('chargedecline');
       yes.disabled = true; yes.innerHTML = '<span class="spinner"></span>Charging your card&hellip;';
       dm.style.display = 'none'; dm.textContent = '';
-      loadJson(API_PAY, {t:e, e:eq, q:qq, mode:'charge', confirm:true, accepted_total:(window.acct||{}).total || 0, season:(window.acct||{}).season || season}).then(function(j){
+      loadJson(API_CHARGE, {t:e, e:eq, q:qq, confirm:true, accepted_total:(window.acct||{}).total || 0, customer_id:(window.acct||{}).customerId || (window.acct||{}).CustomerID || '', season:(window.acct||{}).season || season}).then(function(j){
         if(j.ok){
           audit('charge_ok', { detail: 'charged ' + money(j.amount) + ' to card ****' + String(j.last4 || (window.acct.cardLast4 || '')) });
           formwrap.style.display='none'; content.style.display='block';
