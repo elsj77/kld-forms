@@ -739,6 +739,7 @@
     document.getElementById('inst-head').textContent = isRes ? 'Equal Payments ' : 'Monthly invoicing ';
     var rcI = document.getElementById('rc-installments');
     if(rcI) rcI.style.display = instBlocked ? 'none' : '';
+    var ih=document.getElementById('insthint'); if(ih) ih.style.display = instBlocked ? 'none' : '';
     if(instBlocked){
       // the plan the client ends up on is prepay unless they pick pay as you go
       var _ip = document.querySelector('input[name=payplan][value=installments]');
@@ -950,7 +951,7 @@
       btn.innerHTML = 'Pay ' + (a.total ? money(a.total) + ' ' : '') + 'Now (Secure Payment Page) &rarr;';
     }
     if(window.footDefault !== undefined && a.residential !== false){
-      document.getElementById('footnote').innerHTML = 'Your renewal is confirmed the moment your payment goes through. We&rsquo;ll email your receipt. Prefer monthly installments instead? Just pick that option above.' + changeLineHtml();
+      document.getElementById('footnote').innerHTML = 'Your renewal is confirmed the moment your payment goes through. We&rsquo;ll email your receipt. <span id="insthint">Prefer monthly installments instead? Just pick that option above.</span>' + changeLineHtml();
     } else if(window.footDefault !== undefined){
       document.getElementById('footnote').innerHTML = 'Your proposal is accepted the moment your payment goes through. We&rsquo;ll email your receipt and confirmation. Prefer monthly invoicing instead? Just pick that option above.' + changeLineHtml();
     }
