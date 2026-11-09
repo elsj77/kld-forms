@@ -1678,6 +1678,16 @@
       .then(function(j){
         if(j.ok){
           audit('submit_ok', { detail: 'renewal confirmed on ' + selRaw + ' plan' });
+          // ADD-ON DECLARATION (Ethan, Nov 9 2026): the trail must say plainly whether the client
+          // took any optional services, so a "declined" client is identifiable without guesswork.
+          try {
+            var picks = upSelected() || [];
+            if(picks.length){
+              audit('addons_selected', { detail: picks.map(function(x){ return (x.name || 'add-on') + ' $' + Number(x.price || 0).toFixed(2); }).join('; ') });
+            } else {
+              audit('addons_none', { detail: 'no add-ons selected: client declined all optional services' });
+            }
+          } catch(_) {}
           formwrap.style.display='none'; content.style.display='block';
           var cardMsg, headMsg;
           if(a.residential && a.perVisit && a.paygInv && !a.hasCard){
