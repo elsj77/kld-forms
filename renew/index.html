@@ -444,16 +444,43 @@
     });
     return out.join('; ');
   }
+  // ── interaction audit (Nov 8 2026) ────────────────────────────────────────
+  // Ethan: log every click a client makes, with their final choices, outcomes and errors.
+  // Every row carries a monotonically increasing event_seq so the full session can be
+  // replayed in order, plus a compact before/after snapshot of the visible state so a
+  // click is provable without re-rendering the page months later.
+  var AUD_SEQ = 0, AUD_T0 = Date.now();
+  function uxString(){
+    try{
+      var w = window.innerWidth || 0, h = window.innerHeight || 0;
+      var kind = (w < 700 ? 'phone' : (w < 1100 ? 'tablet' : 'desktop'));
+      return kind + ' ' + w + 'x' + h;
+    }catch(_){ return ''; }
+  }
+  function stateSnapshot(){
+    try{
+      var a = window.acct || {};
+      var pl = (document.querySelector('input[name=payplan]:checked') || {}).value || '';
+      var bits = ['plan=' + (pl || 'none')];
+      if(a.total != null) bits.push('total=' + Number(a.total).toFixed(2));
+      if(a.monthly != null && pl === 'installments') bits.push('monthly=' + Number(a.monthly).toFixed(2));
+      var sd = auditSel();
+      bits.push('addons=' + (sd || 'none'));
+      bits.push('card=' + (a.cardLast4 ? (a.cardBrand || 'card') + ' ****' + a.cardLast4 : 'none'));
+      return bits.join('; ').slice(0, 300);
+    }catch(_){ return ''; }
+  }
   function audit(event, extra){
     try{
       var a = window.acct || {};
+      AUD_SEQ++;
       var body = {
         session_id: AUD_SID,
         event: event,
         page: 'renew',
         estimate_number: String(a.number || eq || '').slice(0, 12),
-        estimate_id: String(estId || '').slice(0, 40),
-        customer_id: String(custId || '').slice(0, 40),
+        estimate_id: String((a.estimate_id || estId || '')).slice(0, 40),
+        customer_id: String((a.customer_id || custId || '')).slice(0, 40),
         client_name: [a.first, a.last].filter(Boolean).join(' '),
         season: a.season || '',
         variant: (a.residential === false ? 'commercial' : 'residential'),
@@ -466,13 +493,82 @@
         card_last4: a.cardLast4 || '',
         user_agent: String(navigator.userAgent || '').slice(0, 200),
         referrer: String(document.referrer || '').slice(0, 300),
-        page_url: String(location.href || '').slice(0, 300)
+        page_url: String(location.href || '').slice(0, 300),
+        source: 'client',
+        event_seq: AUD_SEQ,
+        ux: uxString(),
+        state_after: stateSnapshot(),
+        duration_ms: Date.now() - AUD_T0
       };
       if(extra){ for(var kk in extra){ body[kk] = extra[kk]; } }
       fetch(API_AUDIT, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}).catch(function(){});
     }catch(_){ /* audit must never break the flow */ }
   }
   window.kldAudit = audit;
+  window.kldState = stateSnapshot;
+
+  // ── global click + interaction capture ────────────────────────────────────
+  // Delegated at the document level so every control is covered, including any added
+  // later by re-renders. Records what was clicked, what it looked like before, and
+  // what the visible state became after the handler ran.
+  function describeTarget(el){
+    if(!el) return '';
+    try{
+      var t = el.tagName ? el.tagName.toUpperCase() : '';
+      var id = el.id ? '#' + el.id : '';
+      var lab = '';
+      if(el.labels && el.labels.length) lab = el.labels[0].innerText || '';
+      if(!lab) lab = el.innerText || el.value || el.getAttribute('aria-label') || el.title || '';
+      lab = String(lab).replace(/\s+/g, ' ').trim().slice(0, 100);
+      var typ = (el.type ? '[' + el.type + ']' : '');
+      return (t + id + typ + (lab ? ' "' + lab + '"' : '')).slice(0, 120);
+    }catch(_){ return ''; }
+  }
+  document.addEventListener('click', function(ev){
+    try{
+      var el = ev.target;
+      // walk to the nearest meaningful control so a click on a span inside a label still names it
+      var ctl = el;
+      for(var i = 0; i < 4 && ctl && ctl !== document.body; i++){
+        if(ctl.tagName && /^(BUTTON|A|INPUT|LABEL|SELECT|SUMMARY)$/.test(ctl.tagName)) break;
+        ctl = ctl.parentElement;
+      }
+      var tgt = ctl || el;
+      var before = stateSnapshot();
+      var target = describeTarget(tgt);
+      // let the page's own handler run and re-render first, then snapshot the result
+      setTimeout(function(){
+        audit('click', { click_target: target, state_before: before, state_after: stateSnapshot() });
+      }, 260);
+    }catch(_){ /* never block a click */ }
+  }, true);
+
+  // field focus: which inputs the client actually touched, in order
+  document.addEventListener('focusin', function(ev){
+    try{
+      var el = ev.target;
+      if(!el || !/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName || '')) return;
+      if(el.type === 'hidden') return;
+      audit('field_focus', { click_target: describeTarget(el) });
+    }catch(_){ /* ignore */ }
+  }, true);
+
+  // leaving the page: captures the abandoned state (the most common "why didn't they finish")
+  window.addEventListener('pagehide', function(){
+    try{ audit('page_exit', { detail: 'client left the portal', state_before: stateSnapshot() }); }catch(_){}
+  });
+  // scroll depth buckets, so we can tell "never saw the plans" from "saw them and left"
+  (function(){
+    var seen = {};
+    window.addEventListener('scroll', function(){
+      try{
+        var doc = document.documentElement;
+        var pct = Math.round(((doc.scrollTop + window.innerHeight) / Math.max(1, doc.scrollHeight)) * 100);
+        var bucket = pct >= 95 ? 100 : (pct >= 75 ? 75 : (pct >= 50 ? 50 : (pct >= 25 ? 25 : 0)));
+        if(bucket && !seen[bucket]){ seen[bucket] = 1; audit('scroll_depth', { detail: 'reached ' + bucket + '% of the page' }); }
+      }catch(_){}
+    }, { passive: true });
+  })();
   function crumb(code, detail, mode){
     try{
       var gm = String(qq||'').match(/[0-9a-fA-F-]{36}/);
@@ -728,7 +824,13 @@
       document.querySelectorAll('input[name=payplan]').forEach(function(o){ o.closest('label.radio-card').classList.remove('checked'); });
       r.closest('label.radio-card').classList.add('checked');
       updateCardPrompt();
-      audit('plan_change', { detail: 'selected ' + r.value });
+      audit('plan_change', {
+        detail: 'selected ' + r.value,
+        click_target: 'plan radio ' + r.value,
+        state_before: 'plan=' + (window.__planPrev || 'none'),
+        state_after: stateSnapshot()
+      });
+      window.__planPrev = r.value;
     });
   });
   document.querySelector('input[name=payplan][value=prepay]').closest('label.radio-card').classList.add('checked');
@@ -1431,7 +1533,15 @@
               ? { key:k, price: Number(cb.getAttribute('data-p')), name: cb.getAttribute('data-n') }
               : null;
             upTotals();
-            audit('addons_change', { detail: cb.checked ? ('added ' + cb.getAttribute('data-n')) : ('removed ' + cb.getAttribute('data-n')) });
+            var _nm = cb.getAttribute('data-n'), _pr = cb.getAttribute('data-p');
+            audit('addons_change', {
+              detail: (cb.checked ? 'added ' : 'removed ') + _nm + ' ($' + Number(_pr || 0).toFixed(2) + ')',
+              click_target: 'addon checkbox ' + _nm,
+              state_before: window.__addonPrev || '',
+              state_after: stateSnapshot(),
+              payload: { addon: _nm, price: Number(_pr || 0), checked: !!cb.checked, season_total: (window.acct || {}).total }
+            });
+            window.__addonPrev = stateSnapshot();
           });
         });
       })
