@@ -689,7 +689,9 @@
     a.perVisit = perVisit;
     // Pay As You Go (card autocharge per visit) is offered on residential quotes billed by
     // equal payments or prepay — per-visit quotes already ARE pay-as-you-go, so no third card there.
-    if(isRes && !perVisit){
+    // Pay As You Go (card autocharge per visit) is offered on EVERY residential quote, including
+    // single-installment quotes, where it is one of only two choices (Ethan, Nov 9 2026).
+    if(isRes){
       var paygCardEl = document.getElementById('rc-payg');
       if(paygCardEl){
         paygCardEl.style.display = 'block';
@@ -699,12 +701,25 @@
     // Monthly installments minimum (Ethan, Nov 6 2026): a summer season worth less than $900 is
     // NOT eligible for equal payments, even when SAP lists more than one installment on the quote.
     // Winter/snow keeps its existing installment behaviour.
+    // SINGLE-INSTALLMENT RULE (Ethan, Nov 9 2026): an installment plan only exists when the estimate
+    // itself carries more than one installment. A quote with NumberOfInstallments <= 1 gets exactly
+    // two choices - Prepay or Pay As You Go on a card on file - and the installment option is never
+    // shown. summerRenewalApply / summerContractCreate enforce the same rule server-side.
     var instBlocked = false;
-    if(season === 'summer' && !perVisit && Number(a.total) > 0 && Number(a.total) < 900){
+    var instBlockReason = '';
+    if(!(Number(a.installments) > 1)){
       instBlocked = true;
+      instBlockReason = 'single-payment quote';
       a.installmentsBlocked = true;
+      a.installmentsBlockedReason = instBlockReason;
+    } else if(season === 'summer' && Number(a.total) > 0 && Number(a.total) < 900){
+      instBlocked = true;
+      instBlockReason = 'season under $900';
+      a.installmentsBlocked = true;
+      a.installmentsBlockedReason = instBlockReason;
     }
     window.__instBlocked = instBlocked;
+    window.__instBlockedReason = instBlockReason;
     // office-approved exception: invoiced PAYG without a card (Renewal Type pre-set 'Residential Pay As You Go - No Card Required')
     var paygInv = (a.payg_invoiced === true);
     a.paygInv = paygInv;
@@ -723,7 +738,7 @@
     document.getElementById('prepayhead').textContent = annual ? 'Prepay the year' : 'Prepay the full season';
     document.getElementById('inst-head').textContent = isRes ? 'Equal Payments ' : 'Monthly invoicing ';
     var rcI = document.getElementById('rc-installments');
-    if(rcI) rcI.style.display = instBlocked ? 'none' : ((Number(a.installments) > 1) ? '' : (season === 'summer' ? '' : ''));
+    if(rcI) rcI.style.display = instBlocked ? 'none' : '';
     if(instBlocked){
       // the plan the client ends up on is prepay unless they pick pay as you go
       var _ip = document.querySelector('input[name=payplan][value=installments]');
@@ -815,7 +830,7 @@
     try{ window.scrollTo(0,0); }catch(err){}
     updateCardPrompt();
     audit('page_open', { detail: 'loaded ' + (window.acct.residential === false ? 'commercial' : 'residential') + ' '
-      + (window.acct.season || '') + ' portal' + (window.__instBlocked ? ', monthly installments not offered (season under $900)' : '') + ', default plan ' + ((document.querySelector('input[name=payplan]:checked') || {}).value || '')
+      + (window.acct.season || '') + ' portal' + (window.__instBlocked ? ', monthly installments not offered (' + (window.__instBlockedReason || 'not eligible') + ')' : '') + ', default plan ' + ((document.querySelector('input[name=payplan]:checked') || {}).value || '')
       + ', card ' + (window.acct.hasCard && window.acct.cardLast4 ? 'on file ****' + window.acct.cardLast4 : 'not on file') });
   }).catch(function(err){ crumb('network', String((err && err.message) || err || 'lookup fetch failed'), 'lookup'); fail('Connection problem. Please try again in a few minutes, or call our office.'); });
 
@@ -865,7 +880,7 @@
   // a card saved while the page is open unlocks the auto-renew sentence
   function refreshFootnoteForCard(){
     if(!window.__autoBit || !window.acct || window.acct.residential === false) return;
-    var mode = (document.querySelector('input[name=payplan]:checked') || {}).value || 'installments';
+    var mode = (document.querySelector('input[name=payplan]:checked') || {}).value || (window.__instBlocked ? 'prepay' : 'installments');
     if(mode === 'prepay') return;
     var f = document.getElementById('footnote');
     if(!f || f.innerHTML.indexOf('Doing nothing also renews') > -1) return;
@@ -1084,7 +1099,7 @@
   function updateCardPrompt(){
     var box = document.getElementById('cardprompt');
     var pre = document.getElementById('prepaybox');
-    var selRaw = (document.querySelector('input[name=payplan]:checked')||{}).value || 'installments';
+    var selRaw = (document.querySelector('input[name=payplan]:checked')||{}).value || (window.__instBlocked ? 'prepay' : 'installments');
     var sel = (selRaw === 'payg') ? 'installments' : selRaw;
     var a = window.acct || {};
     pre.classList.toggle('show', sel === 'prepay');
@@ -1236,7 +1251,7 @@
     var gst = Math.round(((Number(a.tax)||0) + addTotal*0.05)*100)/100;
     var tot = Math.round((sub + addTotal + gst)*100)/100;
     var h = '<h3>Your ' + (window.__seasonWord || 'season') + ' summary</h3><p class="osub">Everything you are confirming</p>';
-    var modeItems = (document.querySelector('input[name=payplan]:checked')||{}).value || 'installments';
+    var modeItems = (document.querySelector('input[name=payplan]:checked')||{}).value || (window.__instBlocked ? 'prepay' : 'installments');
     var withGst = (modeItems === 'payg');
     a.items.forEach(function(it){
       if(!it || !Number(it.rate)) return;
@@ -1613,7 +1628,9 @@
     }
     var first = (a.first||'').trim(), last = (a.last||'').trim(), email = (a.email||'').trim();
     var lines;
-    applyRenewal(selRaw === 'payg' ? 'autocharge' : (selRaw === 'prepay' ? 'prepay' : 'installments'));
+    // a blocked installment choice can never reach the backend as installments (Ethan, Nov 9 2026)
+    var effPlan = (selRaw === 'installments' && window.__instBlocked) ? 'prepay' : selRaw;
+    applyRenewal(effPlan === 'payg' ? 'autocharge' : (effPlan === 'prepay' ? 'prepay' : 'installments'));
     if(a.residential && selRaw === 'payg'){
       lines = ['REQUEST: Change payment plan.', 'PREFERRED: Pay-as-you-go per-visit billing with card-on-file autocharge.',
                'RENEWAL CONFIRMED by client via pay-as-you-go (per-visit, card autocharge). (Confirmed from renewal email.)'];
